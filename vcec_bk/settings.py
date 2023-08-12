@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 # }
 
 DATABASES = {
-    'default': dj_database_url.parse("postgres://superadmin:SinPVZCts4G3PwzqhsrAaQh6FvTJ4hae@dpg-cjafqelm2m9c73d70hcg-a.singapore-postgres.render.com/vcec_1")
+    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
 }
 
 # Password validation
