@@ -9,4 +9,6 @@ urlpatterns = [
     path("delete/<str:pk>", views.delete_user),
     path("login", views.login_user),
     path("logout", views.logout_user),
+    path('send-otp', views.send_otp, name='send-otp'),
+    path('verify-otp', views.verify, name='verify-otp'),
 ]

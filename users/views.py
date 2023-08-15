@@ -1,12 +1,57 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password, check_password
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist   
+from django.core.mail import send_mail
 from .models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, EmailSerializer, OtpSerializer
+import random
+from datetime import datetime, timedelta
 
+@api_view(['POST'])
+def send_otp(request):
+    serializer = EmailSerializer(data=request.data)
+    if serializer.is_valid():
+        user_email = serializer.validated_data['user_email']
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+
+        subject = 'Your OTP'
+        message = f'Your OTP is: {otp}'
+        from_email = 'proddecapp@gmail.com'
+
+        send_mail(subject, message, from_email, [user_email])
+
+        # Convert the datetime to a string
+        expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+
+        request.session['otp'] = {
+            'code': otp,
+            'expiry': expiry_time
+        }
+
+        return Response({'message': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
+    
+    return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def verify(request):
+    serializer = OtpSerializer(data=request.data)
+    if serializer.is_valid():
+        user_entered_otp = serializer.validated_data['user_otp']
+        stored_otp_data = request.session.get('otp')
+
+        if stored_otp_data and str(datetime.now()) < stored_otp_data['expiry']:
+            stored_otp = stored_otp_data['code']
+            if user_entered_otp == stored_otp:
+                request.session.pop('otp', None)
+                return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
+        return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
 # get all users
 @api_view(['GET'])
 def get_all_users(request):
