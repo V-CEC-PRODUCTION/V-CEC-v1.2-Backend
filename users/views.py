@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist   
 from django.core.mail import send_mail
+from django.template.loader import render_to_string 
 from .models import User
 from .serializers import UserSerializer, EmailSerializer, OtpSerializer
 import random
@@ -19,10 +20,13 @@ def send_otp(request):
         otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
         subject = 'Your OTP'
-        message = f'Your OTP is: {otp}'
+        
         from_email = 'proddecapp@gmail.com'
+        
+        html_message = render_to_string('otp_email_template.html', {'otp': otp})
 
-        send_mail(subject, message, from_email, [user_email])
+        # Send the email with HTML content
+        send_mail(subject, '', from_email, [user_email], html_message=html_message)
 
         # Convert the datetime to a string
         expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
