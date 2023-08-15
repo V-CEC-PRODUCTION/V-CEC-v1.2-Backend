@@ -44,7 +44,7 @@ def verify(request):
         user_entered_otp = serializer.validated_data['user_otp']
         stored_otp_data = request.session.get('otp')
 
-        if stored_otp_data and str(datetime.now()) < stored_otp_data['expiry']:
+        if stored_otp_data and (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S') < stored_otp_data['expiry']:
             stored_otp = stored_otp_data['code']
             if user_entered_otp == stored_otp:
                 request.session.pop('otp', None)
