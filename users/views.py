@@ -1,6 +1,5 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password, check_password
@@ -11,8 +10,10 @@ from .models import User
 from .serializers import UserSerializer, EmailSerializer, OtpSerializer
 import random
 from datetime import datetime, timedelta
+from celery import shared_task
 
 @api_view(['POST'])
+@shared_task
 def send_otp(request):
     serializer = EmailSerializer(data=request.data)
     if serializer.is_valid():
