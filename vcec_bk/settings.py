@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'users',
+    'notices',
 ]
 
 MIDDLEWARE = [
@@ -85,6 +88,46 @@ WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL'),  # Replace with your Redis server address and database number
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+
+# Celery settings
+CELERY_BROKER_URL = os.environ.get('REDIS_URL')+ '/0?ssl_cert_reqs=CERT_OPTIONAL'
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')+ '/0?ssl_cert_reqs=CERT_OPTIONAL'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
+
+CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'  
+
+
+CELERY_BEAT_SCHEDULE = {
+    'scrape-every-2-minutes': {
+        'task': 'notices.tasks.ktu_webs_announce_task',
+        'schedule': 120,  # 2 minutes in seconds
+    },
+}
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'proddecapp@gmail.com'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
