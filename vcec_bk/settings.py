@@ -78,12 +78,6 @@ WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 DATABASES = {
     'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
@@ -112,9 +106,9 @@ CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'
 
 
 CELERY_BEAT_SCHEDULE = {
-    'scrape-every-2-minutes': {
+    'scrape-every-15-minutes': {
         'task': 'notices.tasks.ktu_webs_announce_task',
-        'schedule': 120,  # 2 minutes in seconds
+        'schedule': 900,  # 2 minutes in seconds
     },
 }
 
