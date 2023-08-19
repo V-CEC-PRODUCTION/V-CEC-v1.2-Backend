@@ -1,7 +1,9 @@
 pip install -r requirements.txt &
 
 # Start Celery Beat
-celery -A your_project_name beat --loglevel=info &
+celery -A vcec_bk beat --loglevel=info &
 
 # Start Celery worker
-celery -A your_project_name worker --loglevel=info 
+celery -A vcec_bk worker --loglevel=info &
+
+python3.11 manage.py runserver
