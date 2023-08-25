@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'users',
     'notices',
+    'homepage_images',
+    'staff_info'
 ]
 
 MIDDLEWARE = [
@@ -80,7 +82,14 @@ WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',  # Database engine
+        'NAME': 'vcec',              # Database name
+        'USER': 'vcec_1',              # Database user
+        'PASSWORD': '@proddec2023',      # Database password
+        'HOST': 'vcec.postgres.database.azure.com',                       # Database host (default is 'localhost')
+        'PORT': '5432',                            # Database port (default is '5432')
+    }
 }
 
 CACHES = {
@@ -121,6 +130,8 @@ EMAIL_HOST_USER = 'proddecapp@gmail.com'
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Password validation
