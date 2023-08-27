@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'users',
     'notices',
     'homepage_images',
-    'staff_info'
+    'staff_info',
+    'highlights_cec'
 ]
 
 MIDDLEWARE = [
