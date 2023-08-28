@@ -9,6 +9,7 @@ urlpatterns = [
     path('homepage/', include('homepage_images.urls')),
     path('staff/info/',include('staff_info.urls')),
     path('highlights/cec/',include('highlights_cec.urls')),
+    path('gallery/cec/',include('gallery_cec.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()    
