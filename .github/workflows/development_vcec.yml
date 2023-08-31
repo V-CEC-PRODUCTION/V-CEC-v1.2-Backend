@@ -26,12 +26,12 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-      
+
       - name: Install dependencies
         run: pip install -r requirements.txt
-        
+
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-      
+
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v2
         with:
@@ -53,7 +53,7 @@ jobs:
         with:
           name: python-app
           path: .
-          
+
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v2
         id: deploy-to-webapp
@@ -61,3 +61,17 @@ jobs:
           app-name: 'vcec'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5A9D46270B8F403F9B70043F1009271F }}
+
+      - name: Set up Python for Celery
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+
+      - name: Activate virtual environment for Celery
+        run: source venv/bin/activate
+
+      - name: Start Celery Beat
+        run: celery -A your_django_project_name beat --loglevel=info --detach
+
+      - name: Start Celery Worker
+        run: celery -A your_django_project_name worker --loglevel=info --detach
