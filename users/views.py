@@ -5,7 +5,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import make_password, check_password
-from django.core.exceptions import ObjectDoesNotExist   
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string 
 from .models import User
