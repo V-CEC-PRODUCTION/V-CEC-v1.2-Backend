@@ -13,12 +13,17 @@ dj-database-url==2.0.0
 Django==4.2.4
 django-redis==5.3.0
 djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.0
 gunicorn==21.2.0
 idna==3.4
 kombu==5.3.1
+numpy==1.25.2
+opencv-python==4.8.0.76
 packaging==23.1
+Pillow==10.0.0
 prompt-toolkit==3.0.39
 psycopg2-binary==2.9.7
+PyJWT==2.8.0
 python-dateutil==2.8.2
 pytz==2023.3
 redis==5.0.0
