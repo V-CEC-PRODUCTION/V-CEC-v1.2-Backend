@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os 
-import dj_database_url
+import redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,8 +40,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'users',
     'notices',
+    'homepage_images',
+    'staff_info',
+    'highlights_cec',
+    'gallery_cec'
 ]
 
 MIDDLEWARE = [
@@ -74,27 +79,50 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 
+redis_url = redis.Redis(
+    host="vcec.redis.cache.windows.net", port=6380,
+    username="default", # use your Redis user. More info https://redis.io/docs/management/security/acl/
+    password="JNNcbv0svzAmuenAFk9Wa2DKTX3QjHemzAzCaKabuvY", # use your Redis password
+    ssl=True,
+)
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',  # Database engine
+        'NAME': 'vcec',              # Database name
+        'USER': 'vcec_1',              # Database user
+        'PASSWORD': '@proddec2023',      # Database password
+        'HOST': 'vcec.postgres.database.azure.com',                       # Database host (default is 'localhost')
+        'PORT': '5432',                            # Database port (default is '5432')
+    }
 }
 
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL'),  # Replace with your Redis server address and database number
+        'LOCATION': 'rediss://vcec.redis.cache.windows.net:6380',  # Replace with your Redis server address and database number
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': 'mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=',
+            'SSL' :True,
+        
         }
     }
 }
@@ -104,17 +132,17 @@ SESSION_CACHE_ALIAS = "default"
 
 
 # Celery settings
-CELERY_BROKER_URL = os.environ.get('REDIS_URL')+ '/0?ssl_cert_reqs=CERT_OPTIONAL'
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')+ '/0?ssl_cert_reqs=CERT_OPTIONAL'
+CELERY_BROKER_URL = 'rediss://:mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=@vcec.redis.cache.windows.net:6380'+ '?ssl_cert_reqs=none'
+CELERY_RESULT_BACKEND = 'rediss://vcec.redis.cache.windows.net:6380/0' + '?password=mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=&ssl_cert_reqs=none'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
 
 CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'  
 
 
 CELERY_BEAT_SCHEDULE = {
-    'scrape-every-2-minutes': {
+    'scrape-every-15-minutes': {
         'task': 'notices.tasks.ktu_webs_announce_task',
-        'schedule': 120,  # 2 minutes in seconds
+        'schedule': 900,  # 15 minutes in seconds
     },
 }
 
@@ -127,6 +155,8 @@ EMAIL_HOST_USER = 'proddecapp@gmail.com'
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Password validation
@@ -146,6 +176,21 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+
+REST_USE_JWT = True
+
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'email',
+    'USER_ID_CLAIM': 'email',
+}
 
 
 # Internationalization

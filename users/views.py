@@ -2,8 +2,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import make_password, check_password
-from django.core.exceptions import ObjectDoesNotExist   
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string 
 from .models import User
@@ -73,29 +76,36 @@ def get_user_by_id(request, pk):
 
 # create user
 @api_view(['POST'])
-def create_user(request):
+def sign_up_user(request):
     try:
         data = request.data.copy()
-        
+
         if 'password' in data:
             data['password'] = make_password(data['password'])
-        
+
+        domain = data['email'].split('@')[1]
+
+        if data['email'][0:3] != 'chn' and domain != 'ceconline.edu':
+            data['role'] = 'guest'
+
         serializer = UserSerializer(data=data)
-        
+
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     except KeyError as e:
         return Response(f"Missing key: {str(e)}", status=status.HTTP_400_BAD_REQUEST)
-    
+
     except ValidationError as e:
         return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    except Exception as e:
+
+    except IntegrityError as e:
         return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # update user
 @api_view(['PUT'])
@@ -123,6 +133,57 @@ def delete_user(request, pk):
     except ObjectDoesNotExist:
         return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
     
+# sign up user using google auth
+@api_view(['POST'])
+def sign_up_user_google(request):
+    try:
+        data = request.data.copy()
+        
+        domain = data['email'].split('@')[1]
+        
+        if data['email'][0:3] != 'chn' and domain != 'ceconline.edu':
+            data['role'] = 'guest'
+            
+        serializer = UserSerializer(data=data)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({'user': serializer.data,'refresh': str(refresh),  'access': str(refresh.access_token) }, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except KeyError as e:
+        return Response(f"Missing key: {str(e)}", status=status.HTTP_400_BAD_REQUEST)
+
+    except ValidationError as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+      
+
+# login using google auth
+@api_view(['POST'])
+def login_user_google(request):
+    try:
+        user_instance=User.objects.get(email=request.data['email'])
+        
+        if user_instance.login_type == 'google':
+            refresh = RefreshToken.for_user(user_instance)
+            
+            user_instance.logged_in = True
+            user_instance.save()
+            
+            serializer = UserSerializer(user_instance, many=False)
+            return Response({'user': serializer.data, 'refresh': str(refresh), 'access': str(refresh.access_token)})
+        else:
+            return Response("User is not registered with google!", status=status.HTTP_400_BAD_REQUEST)
+    
+    except ObjectDoesNotExist:
+        return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
     
 # login user
 @api_view(['POST'])
@@ -131,10 +192,16 @@ def login_user(request):
         user = User.objects.get(email=request.data['email'])
         
         if check_password(request.data['password'], user.password):
+            # Generate refresh and access tokens
+            refresh = RefreshToken.for_user(user)
+            
+            # Update user's login status
             user.logged_in = True
             user.save()
+            
+            # Return user data along with tokens
             serializer = UserSerializer(user, many=False)
-            return Response(serializer.data)
+            return Response({'user': serializer.data, 'refresh': str(refresh), 'access': str(refresh.access_token)})
         else:
             return Response("Password is incorrect!", status=status.HTTP_400_BAD_REQUEST)
     
@@ -148,6 +215,15 @@ def logout_user(request):
         user = User.objects.get(email=request.data['email'])
         
         if user.logged_in:
+            # Blacklist the user's refresh token to invalidate it
+            refresh_token = request.data.get('refresh_token')
+            if refresh_token:
+                try:
+                    refresh = RefreshToken(refresh_token)
+                    refresh.blacklist()
+                except TokenError:
+                    pass  # Invalid token, no action required
+                    
             user.logged_in = False
             user.save()
             serializer = UserSerializer(user, many=False)
