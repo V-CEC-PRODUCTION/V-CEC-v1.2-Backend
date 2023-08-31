@@ -65,10 +65,15 @@ jobs:
           python-version: '3.11'
 
       - name: Activate virtual environment for Celery
-        run: source venv/bin/activate
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Start Celery Beat
-        run: celery -A your_django_project_name beat --loglevel=info --detach
+        run: celery -A vcec_bk beat --loglevel=info --detach
 
       - name: Start Celery Worker
-        run: celery -A your_django_project_name worker --loglevel=info --detach
+        run: celery -A vcec_bk worker --loglevel=info --detach
