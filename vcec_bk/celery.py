@@ -2,6 +2,9 @@ import os
 
 from celery import Celery
 
+import sys
+
+sys.dont_write_bytecode = True
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "vcec_bk.settings")
 

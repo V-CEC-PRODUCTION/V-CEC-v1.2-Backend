@@ -132,8 +132,8 @@ SESSION_CACHE_ALIAS = "default"
 
 
 # Celery settings
-CELERY_BROKER_URL = 'rediscache://vcec.redis.cache.windows.net:6380,password=mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=,ssl=True,abortConnect=False'
-CELERY_RESULT_BACKEND = 'rediscache://vcec.redis.cache.windows.net:6380,password=mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=,ssl=True,abortConnect=False'
+CELERY_BROKER_URL = 'rediss://:mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=@vcec.redis.cache.windows.net:6380'+ '?ssl_cert_reqs=none'
+CELERY_RESULT_BACKEND = 'rediss://vcec.redis.cache.windows.net:6380/0' + '?password=mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=&ssl_cert_reqs=none'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
 
 CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'  
