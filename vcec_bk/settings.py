@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os 
-import dj_database_url
+import redis
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -79,6 +79,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 
+redis_url = redis.Redis(
+    host="vcec.redis.cache.windows.net", port=6380,
+    username="default", # use your Redis user. More info https://redis.io/docs/management/security/acl/
+    password="JNNcbv0svzAmuenAFk9Wa2DKTX3QjHemzAzCaKabuvY", # use your Redis password
+    ssl=True,
+)
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -111,9 +117,12 @@ DATABASES = {
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL'),  # Replace with your Redis server address and database number
+        'LOCATION': 'rediss://vcec.redis.cache.windows.net:6380',  # Replace with your Redis server address and database number
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': 'mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=',
+            'SSL' :True,
+        
         }
     }
 }
@@ -123,8 +132,8 @@ SESSION_CACHE_ALIAS = "default"
 
 
 # Celery settings
-CELERY_BROKER_URL = os.environ.get('REDIS_URL')+ '/0?ssl_cert_reqs=CERT_OPTIONAL'
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')+ '/0?ssl_cert_reqs=CERT_OPTIONAL'
+CELERY_BROKER_URL = 'rediscache://vcec.redis.cache.windows.net:6380,password=mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=,ssl=True,abortConnect=False'
+CELERY_RESULT_BACKEND = 'rediscache://vcec.redis.cache.windows.net:6380,password=mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=,ssl=True,abortConnect=False'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
 
 CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'  
@@ -133,7 +142,7 @@ CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'
 CELERY_BEAT_SCHEDULE = {
     'scrape-every-15-minutes': {
         'task': 'notices.tasks.ktu_webs_announce_task',
-        'schedule': 900,  # 2 minutes in seconds
+        'schedule': 900,  # 15 minutes in seconds
     },
 }
 
@@ -177,11 +186,11 @@ REST_FRAMEWORK = {
 
 REST_USE_JWT = True
 
-# SIMPLE_JWT = {
-#     'AUTH_HEADER_TYPES': ('Bearer',),
-#     'USER_ID_FIELD': 'email',
-#     'USER_ID_CLAIM': 'email',
-# }
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'email',
+    'USER_ID_CLAIM': 'email',
+}
 
 
 # Internationalization

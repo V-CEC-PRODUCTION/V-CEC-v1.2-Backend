@@ -92,9 +92,7 @@ def sign_up_user(request):
         if serializer.is_valid():
             user = serializer.save()
 
-            refresh = RefreshToken.for_user(user)  # Generate a refresh token
-
-            return Response({'user': serializer.data,'refresh': str(refresh), 'access': str(refresh.access_token) }, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -104,7 +102,7 @@ def sign_up_user(request):
     except ValidationError as e:
         return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    except Exception as e:
+    except IntegrityError as e:
         return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -164,21 +162,21 @@ def sign_up_user_google(request):
 
     except Exception as e:
         return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+      
 
 # login using google auth
 @api_view(['POST'])
 def login_user_google(request):
     try:
-        user = User.objects.get(email=request.data['email'])
+        user_instance=User.objects.get(email=request.data['email'])
         
-        if user.login_type == 'google':
-            refresh = RefreshToken.for_user(user)
+        if user_instance.login_type == 'google':
+            refresh = RefreshToken.for_user(user_instance)
             
-            user.logged_in = True
-            user.save()
+            user_instance.logged_in = True
+            user_instance.save()
             
-            serializer = UserSerializer(user, many=False)
+            serializer = UserSerializer(user_instance, many=False)
             return Response({'user': serializer.data, 'refresh': str(refresh), 'access': str(refresh.access_token)})
         else:
             return Response("User is not registered with google!", status=status.HTTP_400_BAD_REQUEST)
