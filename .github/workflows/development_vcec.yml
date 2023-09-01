@@ -59,9 +59,3 @@ jobs:
           app-name: 'vcec'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5A9D46270B8F403F9B70043F1009271F }}
-
-      - name: Install libgli
-        run: apt-get install libgl1-mesa-glx
-
-      - name: Install libgli2
-        run: apt-get install libglib2.0-0
