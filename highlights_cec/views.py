@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse
 from .models import HighlightImage as Image
-from .serializers import ImageSerializer
+from .serializers import ImageSerializer, ImageGetSerializer
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -45,8 +45,9 @@ def create_highlight(request):
 
 @api_view(['GET'])
 def get_all_highlights(request):
-    images = Image.objects.all()
-    serializer = ImageSerializer(images, many=True)
+    images = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
+    
+    serializer = ImageGetSerializer(images, many=True)
     
     response = {
         "highlight_info_images": serializer.data,

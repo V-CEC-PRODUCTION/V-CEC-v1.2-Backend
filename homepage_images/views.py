@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse
 from .models import Image
-from .serializers import ImageSerializer
+from .serializers import ImageSerializer, ImageGetSerializer
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -39,8 +39,9 @@ def create_image(request):
 
 @api_view(['GET'])
 def get_all_images(request):
-    images = Image.objects.all()
-    serializer = ImageSerializer(images, many=True)
+    images = Image.objects.values('id', 'image_url', 'thumbnail_url')
+    
+    serializer = ImageGetSerializer(images, many=True)
     
     response = {
         "homepage_images": serializer.data,
