@@ -27,6 +27,12 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Install libgli & libgli2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-glx
+          sudo apt-get install -y libglib2.0-0
       
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
       
@@ -51,11 +57,6 @@ jobs:
           name: python-app
           path: .
 
-      - name: Install libgli
-        run: sudo apt-get install -y libgl1-mesa-glx
-
-      - name: Install libgli2
-        run: sudo apt-get install -y libglib2.0-0
         
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v2
