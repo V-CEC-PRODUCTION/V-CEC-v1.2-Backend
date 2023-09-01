@@ -79,13 +79,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 
-redis_url = redis.Redis(
-    host="vcec.redis.cache.windows.net", port=6380,
-    username="default", # use your Redis user. More info https://redis.io/docs/management/security/acl/
-    password="JNNcbv0svzAmuenAFk9Wa2DKTX3QjHemzAzCaKabuvY", # use your Redis password
-    ssl=True,
-)
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 LOGGING = {
@@ -133,7 +126,7 @@ SESSION_CACHE_ALIAS = "default"
 
 # Celery settings
 CELERY_BROKER_URL = 'rediss://:mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=@vcec.redis.cache.windows.net:6380'+ '?ssl_cert_reqs=none'
-CELERY_RESULT_BACKEND = 'rediss://vcec.redis.cache.windows.net:6380/0' + '?password=mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=&ssl_cert_reqs=none'
+CELERY_RESULT_BACKEND = 'rediss://:mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=@vcec.redis.cache.windows.net:6380'+ '?ssl_cert_reqs=none'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
 
 CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'  
