@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
@@ -44,6 +45,20 @@ def send_otp(request):
     
     return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        
+        # Use the 'email' field as the username for authentication
+        email = data.get('email')
+        try:
+            user = User.objects.get(email=email)
+            
+            data['username'] = user.email
+        except User.DoesNotExist:
+            raise print("No user found with this email address")
+        
+        return data
 
 @api_view(['POST'])
 def verify(request):
