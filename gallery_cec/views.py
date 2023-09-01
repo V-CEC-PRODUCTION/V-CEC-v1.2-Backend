@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse, FileResponse
 from .models import FileStore, VideoStore
-from .serializers import GallerySerializer, VideoSerializer
+from .serializers import GallerySerializer, VideoSerializer, GalleryGetSerializer, VideoGetSerializer
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -233,8 +233,8 @@ def stream_video(request, pk):
 
 @api_view(['GET'])
 def get_all_files(request):
-    images = FileStore.objects.all()
-    serializer = GallerySerializer(images, many=True)
+    images = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
+    serializer = GalleryGetSerializer(images, many=True)
     
     response = {
         "gallery_files": serializer.data,
@@ -282,7 +282,7 @@ def get_detail_video(request, pk):
     except FileStore.DoesNotExist:
         return Response({"Not found in the database"},status=404)
     
-    serializer = VideoSerializer(file)
+    serializer = VideoGetSerializer(file)
     
     if serializer.data['video_url']:
         return Response(serializer.data)
