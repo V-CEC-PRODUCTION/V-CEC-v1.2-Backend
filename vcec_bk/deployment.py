@@ -30,9 +30,55 @@ conn_str_params = {pair.split('=')[0]: pair.split('=')[1] for pair in conn_str.s
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': conn_str_params['dbname'],
+        'NAME': conn_str_params['database'],
         'HOST': conn_str_params['host'],
+        'PORT': conn_str_params['port'],
         'USER': conn_str_params['user'],
         'PASSWORD': conn_str_params['password'],
     }
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ['REDIS_HOST'],  # Replace with your Redis server address and database number
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': os.environ['REDIS_PASSWORD'],
+            'SSL' :True,
+        
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+
+# Celery settings
+CELERY_BROKER_URL = os.environ['REDIS_URL'] + '?ssl_cert_reqs=none'
+CELERY_RESULT_BACKEND = os.environ['REDIS_URL'] + '?ssl_cert_reqs=none'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
+
+CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'  
+
+
+CELERY_BEAT_SCHEDULE = {
+    'scrape-every-15-minutes': {
+        'task': 'notices.tasks.ktu_webs_announce_task',
+        'schedule': 900,  # 15 minutes in seconds
+    },
+}
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'proddecapp@gmail.com'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
