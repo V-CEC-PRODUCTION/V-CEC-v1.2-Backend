@@ -27,6 +27,12 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Install libgli
+        run: apt-get install libgl1-mesa-glx
+
+      - name: Install libgli2
+        run: apt-get install libglib2.0-0
  
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
