@@ -79,13 +79,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vcec_bk.wsgi.application'
 
-redis_url = redis.Redis(
-    host="vcec.redis.cache.windows.net", port=6380,
-    username="default", # use your Redis user. More info https://redis.io/docs/management/security/acl/
-    password="JNNcbv0svzAmuenAFk9Wa2DKTX3QjHemzAzCaKabuvY", # use your Redis password
-    ssl=True,
-)
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 LOGGING = {
