@@ -27,12 +27,6 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r requirements.txt
-
-      - name: Install libgli
-        run: apt-get install libgl1-mesa-glx
-
-      - name: Install libgli2
-        run: apt-get install libglib2.0-0
  
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
@@ -66,7 +60,8 @@ jobs:
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5A9D46270B8F403F9B70043F1009271F }}
 
-      - name: Set up Python for Celery
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
+      - name: Install libgli
+        run: apt-get install libgl1-mesa-glx
+
+      - name: Install libgli2
+        run: apt-get install libglib2.0-0
