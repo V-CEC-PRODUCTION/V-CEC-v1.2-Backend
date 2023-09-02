@@ -8,6 +8,8 @@ from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from datetime import datetime
+from django.core.cache import cache
+import json
 import time
 import random
 import string
@@ -37,6 +39,16 @@ def create_highlight(request):
             thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
             image_instance.thumbnail.save(unique_filename, thumbnail, save=True)
             image_instance.save()
+            
+        highlight_images = 'highlight_images'
+        
+        images_list = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
+        
+        images_list_result = ImageGetSerializer(images_list, many=True)
+        
+        highlights_content_result = images_list_result.data
+        
+        cache.set(highlight_images, json.dumps(highlights_content_result),timeout=60*60*24*7)
 
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
@@ -45,12 +57,30 @@ def create_highlight(request):
 
 @api_view(['GET'])
 def get_all_highlights(request):
-    images = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
     
-    serializer = ImageGetSerializer(images, many=True)
+    highlights_content = 'highlights_content'
+    
+    highlights_content_result = cache.get(highlights_content)
+    
+    if highlights_content_result is None:
+        
+        print("Data from database")
+        
+        images = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
+    
+        serializer = ImageGetSerializer(images, many=True)
+        
+        highlights_content_result = serializer.data
+        
+        cache.set(highlights_content, json.dumps(highlights_content_result),timeout=60*60*24*7)
+    
+    else:
+        print("Data from cache")
+        highlights_content_result = json.loads(highlights_content_result)
+        
     
     response = {
-        "highlight_info_images": serializer.data,
+        "highlight_info_images": highlights_content_result,
     }
     return Response(response)
 
@@ -101,6 +131,7 @@ def get_highlight_detail(request, pk):
 
 @api_view(['DELETE'])
 def delete_highlight(request, pk):
+         
     try:
         image = Image.objects.get(pk=pk)
     except Image.DoesNotExist:
@@ -112,6 +143,17 @@ def delete_highlight(request, pk):
         image.thumbnail.delete()
     
     image.delete()
+    
+    highlight_images = 'highlight_images'
+    
+    images_list = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
+
+    images_list_result = ImageGetSerializer(images_list, many=True)
+        
+    highlights_content_result = images_list_result.data
+    
+    cache.set(highlight_images, json.dumps(highlights_content_result),timeout=60*60*24*7)
+    
     return Response({"message": "Image and thumbnail deleted successfully."}, status=204)
 
 
