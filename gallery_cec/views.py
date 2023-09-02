@@ -3,12 +3,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse, FileResponse
 from .models import FileStore, VideoStore
-from .serializers import GallerySerializer, VideoSerializer
+from .serializers import GallerySerializer, VideoSerializer, GalleryGetSerializer, VideoGetSerializer
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from celery import shared_task
-import time, random, string, os, cv2, numpy as np
+from django.core.cache import cache
+import time, random, json,string, os, cv2, numpy as np
 
 @shared_task
 def calculate_frame_score(frame):
@@ -115,6 +116,19 @@ def delete_file(request, pk):
         image.thumbnail.delete()
     
     image.delete()
+    
+    
+    gallery_files = 'gallery_files'
+        
+    files_list = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
+    
+    files_result = GalleryGetSerializer(files_list, many=True)
+    
+    gallery_files_result = files_result.data
+    
+    cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
+    
+    
     return Response({"message": "FileStore and thumbnail deleted successfully."}, status=204)
 
 
@@ -209,6 +223,16 @@ def post_file(request):
             media_instance.save()
             video_instance.save()
             
+        gallery_files = 'gallery_files'
+            
+        files_list = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
+        
+        files_result = GalleryGetSerializer(files_list, many=True)
+        
+        gallery_files_result = files_result.data
+        
+        cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
+            
         return Response(media_item.data, status=201)
     return Response(media_item.errors, status=400)
 
@@ -233,11 +257,29 @@ def stream_video(request, pk):
 
 @api_view(['GET'])
 def get_all_files(request):
-    images = FileStore.objects.all()
-    serializer = GallerySerializer(images, many=True)
+    
+    gallery_files = 'gallery_files'
+    
+    gallery_files_result = cache.get(gallery_files)
+    
+    if gallery_files_result is None:
+        
+        print("Data from database")
+        
+        images = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
+        serializer = GalleryGetSerializer(images, many=True)
+        
+        gallery_files_result = serializer.data
+        
+        cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
+        
+    else:
+        print("Data from cache")
+        gallery_files_result = json.loads(gallery_files_result)
+        
     
     response = {
-        "gallery_files": serializer.data,
+        "gallery_files": gallery_files_result,
     }
     
     return Response(response)
@@ -277,17 +319,39 @@ def thumbnail_file(request, pk):
 
 @api_view(['GET'])
 def get_detail_video(request, pk):
+    
     try:
         file = VideoStore.objects.get(fid=pk)
+        
+        gallery_videos = str(pk)+'gallery_videos'
+        
+        gallery_videos_result = cache.get(gallery_videos)
+        
+        if gallery_videos_result is None:
+            
+            print("Data from database")
+            
+            serializer = VideoGetSerializer(file)
+            
+            gallery_videos_result = serializer.data
+            
+            cache.set(gallery_videos, json.dumps(gallery_videos_result),timeout=60*60)
+            
+        else:
+            
+            print("Data from cache")
+            gallery_videos_result = json.loads(gallery_videos_result)
+            
+        if gallery_videos_result['video_url']:
+            return Response(gallery_videos_result,status=200)
+        else:
+            return Response({"Not found in the database"},status=404)
+            
     except FileStore.DoesNotExist:
         return Response({"Not found in the database"},status=404)
     
-    serializer = VideoSerializer(file)
     
-    if serializer.data['video_url']:
-        return Response(serializer.data)
-    else:
-        return Response({"Not found in the database"},status=404)
+
    
 
 @api_view(['GET'])

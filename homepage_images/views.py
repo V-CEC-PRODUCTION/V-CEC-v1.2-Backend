@@ -7,16 +7,19 @@ from .serializers import ImageSerializer, ImageGetSerializer
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.cache import cache
 import time
 import random
 import string
+import json
 
 @api_view(['POST'])
 def create_image(request):
     serializer = ImageSerializer(data=request.data)
     if serializer.is_valid():
         image_instance = serializer.save()
-
+        
+        homepage_images = 'homepage_images'
         # Generate and save the thumbnail
         if image_instance.image:
             img = PilImage.open(image_instance.image.path)
@@ -31,7 +34,17 @@ def create_image(request):
 
             thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
             image_instance.thumbnail.save(unique_filename, thumbnail, save=True)
-
+            
+            
+            images_list = Image.objects.values('id', 'image_url', 'thumbnail_url')
+        
+            images_list_result = ImageGetSerializer(images_list, many=True)
+            
+            home_img_result = images_list_result.data
+            
+            cache.set(homepage_images, json.dumps(home_img_result),timeout=60*60*24*7)
+           
+            
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
 
@@ -39,12 +52,27 @@ def create_image(request):
 
 @api_view(['GET'])
 def get_all_images(request):
-    images = Image.objects.values('id', 'image_url', 'thumbnail_url')
     
-    serializer = ImageGetSerializer(images, many=True)
+    homepage_images = 'homepage_images'
+    
+    home_img_result = cache.get(homepage_images)
+    
+    if home_img_result is None:
+        print("Data from database")
+        images = Image.objects.values('id', 'image_url', 'thumbnail_url')
+        
+        serializer = ImageGetSerializer(images, many=True)
+        
+        home_img_result = serializer.data
+        
+        cache.set(homepage_images, json.dumps(home_img_result),timeout=60*60*24*7)
+        
+    else:
+        print("Data from cache")
+        home_img_result = json.loads(home_img_result)
     
     response = {
-        "homepage_images": serializer.data,
+        "homepage_images": home_img_result,
     }
     return Response(response)
 
@@ -105,7 +133,17 @@ def delete_image(request, pk):
     if image.thumbnail:
         image.thumbnail.delete()
     
+    homepage_images = 'homepage_images'
+    
     image.delete()
+    
+    images_list = Image.objects.values('id', 'image_url', 'thumbnail_url')
+
+    images_list_result = ImageGetSerializer(images_list, many=True)
+    
+    home_img_result = images_list_result.data
+    
+    cache.set(homepage_images, json.dumps(home_img_result),timeout=60*60*24*7)
     return Response({"message": "Image and thumbnail deleted successfully."}, status=204)
 
 
