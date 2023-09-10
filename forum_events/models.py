@@ -1,4 +1,5 @@
 from django.db import models, connection
+from users.models import User
 
 
 
@@ -28,7 +29,7 @@ class Registration(models.Model):
 
 class LikeEvent(models.Model):
     event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE)
-    user_id = models.CharField(max_length=100)
+    user = models.ForeignKey(User)
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
 
@@ -62,7 +63,7 @@ def create_dynamic_models(model_names):
 
 
 def create_tables(app_name,unique_id):
-    model_names = [app_name + unique_id+'_likes', app_name+unique_id+'_registration']
+    model_names = [app_name + '_'+str(unique_id)+'_likes', app_name+'_'+str(unique_id)+'_registration']
     create_dynamic_models(model_names)
 # def create_like_event_model(event):
 #     class_name = f'LikeEvent{event.id}'
