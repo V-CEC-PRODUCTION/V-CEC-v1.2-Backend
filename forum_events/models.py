@@ -62,7 +62,7 @@ def create_dynamic_models(model_names):
 
 
 def create_tables(app_name,unique_id):
-    model_names = [app_name + unique_id+'_likes', app_name+unique_id+'_registration']
+    model_names = [app_name + '_'+str(unique_id)+'_likes', app_name+'_'+str(unique_id)+'_registration']
     create_dynamic_models(model_names)
 # def create_like_event_model(event):
 #     class_name = f'LikeEvent{event.id}'
