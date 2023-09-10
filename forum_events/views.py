@@ -4,12 +4,12 @@ from rest_framework import status
 from django.http import HttpResponse, FileResponse
 from PIL import Image as PilImage
 from io import BytesIO
-from django.db import connection
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from .serializers import FormSerializer
+from .serializers import FormSerializer,FormGetSerializer
 import time,random ,string
-from .models import create_tables,create_dynamic_models,forumEvents
-from psycopg2 import sql
+from .models import create_tables,forumEvents,create_dynamic_models
+from django.db import connection
+from psycopg2 import sql    
 
 @api_view(['POST'])
 def create_form(request):
@@ -34,6 +34,75 @@ def create_form(request):
         return Response(serializer.data,status.HTTP_200_OK)
     else:
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_events(request):
+    try:
+        if request.query_params.get('status') == 'Upcoming':
+            forms = forumEvents.objects.filter(status='Upcoming').order_by('-publish_date')
+        elif request.query_params.get('status') == 'Ended':
+            forms = forumEvents.objects.filter(status='Ended').order_by('-publish_date')
+        else:
+            return Response({"status": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        serializer = FormGetSerializer(forms, many=True)
+
+       
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except forumEvents.DoesNotExist:
+        return Response({"status": "Forms not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+@api_view(['DELETE'])
+def delete_event(request,pk):
+    #deleting image and thumbnail image
+    try:
+        ob = forumEvents.objects.get(pk=pk)
+        
+    except ob.DoesNotExist:
+        return Response({"error": "Image not found."}, status=404)
+    
+    
+
+    
+    if ob.poster_image:
+        ob.poster_image.delete()
+    if ob.thumbnail_poster_image:
+        ob.thumbnail_poster_image.delete()
+    
+    tables=["forum_events_forum_events"+ '_'+str(ob.id)+'_likes', "forum_events_forum_events"+'_'+str(ob.id)+'_registration']
+
+    
+    if ob.register_button_link=='vcec_form':
+
+        try:
+            cursor= connection.cursor()
+            for table_name in tables:
+
+                cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+        
+            
+           
+        except forumEvents.DoesNotExist:
+            return Response( "Event not found.")
+        except Exception as e:
+            return Response( f"An error occurred: {str(e)}")
+    else:
+        cursor=connection.cursor()
+        cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
+
+    ob.delete()
+    connection.close()
+    return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
+            
+                
+                
+            
+        
+    
+=======
 
 @api_view(['PUT'])
 def update_form(request,id):
