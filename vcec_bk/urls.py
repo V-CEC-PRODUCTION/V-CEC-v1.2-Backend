@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -10,6 +11,7 @@ urlpatterns = [
     path('staff/info/',include('staff_info.urls')),
     path('highlights/cec/',include('highlights_cec.urls')),
     path('gallery/cec/',include('gallery_cec.urls')),
+    path('forum/events/',include('forum_events.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()    

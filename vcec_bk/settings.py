@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'homepage_images',
     'staff_info',
     'highlights_cec',
-    'gallery_cec'
+    'gallery_cec',
+    'forum_events'
 ]
 
 MIDDLEWARE = [
@@ -177,7 +178,10 @@ REST_FRAMEWORK = {
     ],
 }
 
-
+REST_FRAMEWORK_SIMPLEJWT = {
+    'USER_AUTHENTICATION_RULE': 'users.serializers.CustomTokenObtainPairSerializer',
+    # Other settings...
+}
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
@@ -188,10 +192,13 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',  # Assuming your user model has an 'id' field
+    'USER_ID_FIELD': 'email',  # Assuming your user model has an 'id' field
     'USER_ID_CLAIM': 'user_id',
     'USER_AUTHENTICATION_RULE': 'path.to.CustomTokenObtainPairSerializer',
+ 
 }
+
+#AUTH_USER_MODEL = 'users.User' 
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

@@ -11,10 +11,14 @@ from django.db import IntegrityError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string 
 from .models import User
-from .serializers import UserSerializer, EmailSerializer, OtpSerializer
+from .serializers import UserSerializer, EmailSerializer, OtpSerializer, CustomTokenObtainPairSerializer
 import random
 from datetime import datetime, timedelta
 from celery import shared_task
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
 @api_view(['POST'])
 @shared_task
@@ -45,20 +49,7 @@ def send_otp(request):
     
     return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        
-        # Use the 'email' field as the username for authentication
-        email = data.get('email')
-        try:
-            user = User.objects.get(email=email)
-            
-            data['username'] = user.email
-        except User.DoesNotExist:
-            raise print("No user found with this email address")
-        
-        return data
+
 
 @api_view(['POST'])
 def verify(request):
@@ -72,7 +63,12 @@ def verify(request):
             if user_entered_otp == stored_otp:
                 request.session.pop('otp', None)
                 return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
-        return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        else:
+            request.session.pop('otp', None)
+            return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
     return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 # get all users
@@ -107,8 +103,12 @@ def sign_up_user(request):
 
         if serializer.is_valid():
             user = serializer.save()
+            
+            refresh = RefreshToken.for_user(user)
+            
+            
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response({'user': serializer.data,'refresh': str(refresh),  'access': str(refresh.access_token) }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

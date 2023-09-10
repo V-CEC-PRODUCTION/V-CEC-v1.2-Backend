@@ -1,5 +1,5 @@
 from django.urls import path
-from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
+
 from . import views
 
 urlpatterns = [
@@ -12,6 +12,5 @@ urlpatterns = [
     path("logout/api/token/", views.logout_user),
     path('send-otp', views.send_otp, name='send-otp'),
     path('verify-otp', views.verify, name='verify-otp'),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
 ]
