@@ -5,3 +5,5 @@ from django.http import HttpResponse, FileResponse
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from .models import forumEvents, Registration,LikeEvent
+
