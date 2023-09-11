@@ -16,7 +16,7 @@ class forumAnnouncements(models.Model):
     
     def save(self, *args, **kwargs):
         if self.poster_image:
-            self.poster_image_url = f"forum/announcements/cec/api/announcements/{self.id}/{self.id}/file/"
+            self.poster_image_url = f"forum/announcements/cec/api/announcements/{self.id}/file/"
         if self.thumbnail_poster_image:
             self.thumbnail_poster_image_url = f"forum/announcements/cec/api/announcements/{self.id}/thumbnail/"
 
