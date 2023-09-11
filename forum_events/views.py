@@ -88,6 +88,12 @@ def delete_event(request,pk):
     ob.delete()
     connection.close()
     return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
+            
+                
+                
+            
+    
+
                          
 @api_view(['PUT'])
 def update_event(request,id):
