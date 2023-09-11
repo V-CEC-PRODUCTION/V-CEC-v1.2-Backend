@@ -3,7 +3,7 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import HttpResponse 
-from .serializers import FormSerializer
+from .serializers import FormGetSerializer, FormSerializer
 from PIL import Image as PilImage
 from io import BytesIO
 from rest_framework import status
@@ -129,3 +129,13 @@ def thumbnail_file(request, pk):
 
     return Response(status=status.HTTP_404_NOT_FOUND)
 
+@api_view(['GET'])
+def get_announcements(request):
+    try:
+        
+        announcements = forumAnnouncements.objects.all().order_by('-publish_date')
+        serializer = FormGetSerializer(announcements, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except forumAnnouncements.DoesNotExist:
+        return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
