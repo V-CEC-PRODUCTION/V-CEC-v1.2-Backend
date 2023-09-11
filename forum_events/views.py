@@ -100,9 +100,7 @@ def delete_event(request,pk):
                 
                 
             
-        
     
-=======
 
 @api_view(['PUT'])
 def update_form(request,id):
