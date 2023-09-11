@@ -5,9 +5,9 @@ class forumAnnouncements(models.Model):
 
     title = models.TextField(blank=True)
     content = models.TextField(blank=True,null=True)
-    poster_image = models.ImageField(upload_to='forum/events/posters/',blank=True)
+    poster_image = models.ImageField(upload_to='forum/announcements/posters/',blank=True)
     poster_image_url = models.TextField(blank=True,null=True)
-    thumbnail_poster_image = models.ImageField(upload_to='forum/events/thumbnails/', blank=True, null=True) 
+    thumbnail_poster_image = models.ImageField(upload_to='forum/announcements/thumbnails/', blank=True, null=True) 
     thumbnail_poster_image_url = models.TextField(blank=True,null=True) 
     whatsapp_link = models.TextField(blank=True,null=True)
     publish_date = models.DateTimeField(auto_now_add=True)
@@ -23,7 +23,7 @@ class forumAnnouncements(models.Model):
         super().save(*args, **kwargs)
     
 class LikeAnnouncement(models.Model):
-    event_id = models.ForeignKey(forumAnnouncements, on_delete=models.CASCADE)
+    event_id = models.IntegerField(default=0)
     user = models.ForeignKey(User,on_delete=models.DO_NOTHING,blank=True,null=True)
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)

@@ -6,6 +6,6 @@ urlpatterns =[
     path('cec/api/announcements/<int:pk>/file/',image_file,name='forum_events'),
     path('cec/api/announcements/<int:pk>/thumbnail/',thumbnail_file,name='forum_events'),
     path('update-announcement/<int:id>/',update_announcement,name='update-form'),
-    path('delete-announcement/<int:pk>',delete_announcement,name="delete-event"),
+    path('delete-announcement/<int:pk>/',delete_announcement,name="delete-event"),
 
 ]
