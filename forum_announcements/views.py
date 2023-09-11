@@ -93,10 +93,6 @@ def delete_announcement(request,pk):
     connection.close()
     return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
 
-
-
-
-
 @api_view(['GET'])
 def image_file(request, pk):
     try:

@@ -36,7 +36,7 @@ class Registration(models.Model):
     
 class LikeEvent(models.Model):
     event_id = models.IntegerField(default=0)
-    user = models.ForeignKey(User,on_delete=models.DO_NOTHING,blank=True,null=True, on_delete=models.PROTECT,blank=True)
+    user = models.ForeignKey(User,on_delete=models.DO_NOTHING,blank=True,null=True)
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
 

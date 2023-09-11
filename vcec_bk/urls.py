@@ -12,7 +12,8 @@ urlpatterns = [
     path('highlights/cec/',include('highlights_cec.urls')),
     path('gallery/cec/',include('gallery_cec.urls')),
     path('forum/events/',include('forum_events.urls')),
-    path('forum/announcements/',include('forum_announcements.urls'))
+    path('forum/announcements/',include('forum_announcements.urls')),
+    path('timetable/cec/',include('timetables.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()    
