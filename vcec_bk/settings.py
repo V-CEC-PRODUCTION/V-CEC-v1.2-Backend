@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     'staff_info',
     'highlights_cec',
     'gallery_cec',
-    'forum_events'
+    'forum_events',
+    'forum_announcements'
 ]
 
 MIDDLEWARE = [

@@ -1,8 +1,6 @@
 from django.db import models, connection
 from users.models import User
 
-
-
 class forumEvents(models.Model):
 
     title = models.TextField(blank=True)
@@ -27,29 +25,23 @@ class forumEvents(models.Model):
         super().save(*args, **kwargs)
 
 
-    
-    
 class Registration(models.Model):
     name = models.TextField()
-    event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE) 
+    event_id = models.IntegerField(default=0)
     semester = models.CharField(max_length=10)
     division = models.CharField(max_length=10)
     email = models.TextField()
     phone_no = models.TextField()
     gender = models.TextField(default='Other')
     
-
-
 class LikeEvent(models.Model):
-    event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.PROTECT,blank=True)
+    event_id = models.IntegerField(default=0)
+    user = models.ForeignKey(User,on_delete=models.DO_NOTHING,blank=True,null=True, on_delete=models.PROTECT,blank=True)
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
 
 
-
-    
-def create_dynamic_models(model_names):
+def create_dynamic_models(model_names,unique_id):
     base_models = [LikeEvent, Registration]
 
     for base_model, new_model_name in zip(base_models, model_names):
@@ -67,6 +59,8 @@ def create_dynamic_models(model_names):
 
         fields['__module__'] = app_label
 
+        fields['event_id']=models.IntegerField(default=unique_id)
+
         # Create the dynamic model class
         dynamic_model = type(new_model_name, (models.Model,), fields)
 
@@ -77,13 +71,11 @@ def create_dynamic_models(model_names):
 
 def create_tables(app_name,unique_id):
 
-
-    
     model_names = [app_name + '_'+str(unique_id)+'_likes' ]
     if forumEvents.objects.get(pk=unique_id).register_button_link=='vcec_form':
         model_names.append(app_name+'_'+str(unique_id)+'_registration')
 
-    create_dynamic_models(model_names)
+    create_dynamic_models(model_names,unique_id)
 # def create_like_event_model(event):
 #     class_name = f'LikeEvent{event.id}'
 #     return type(class_name, (LikeEvent,), {
