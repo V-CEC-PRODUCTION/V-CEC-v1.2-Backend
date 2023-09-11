@@ -1,8 +1,6 @@
 from django.db import models, connection
 from users.models import User
 
-
-
 class forumEvents(models.Model):
 
     title = models.TextField(blank=True)
@@ -27,8 +25,7 @@ class forumEvents(models.Model):
         super().save(*args, **kwargs)
 
 
-    
-    
+  
 class Registration(models.Model):
     name = models.TextField()
     event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE) 
@@ -38,17 +35,13 @@ class Registration(models.Model):
     phone_no = models.TextField()
     gender = models.TextField(default='Other')
     
-
-
 class LikeEvent(models.Model):
     event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE)
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User,on_delete=models.DO_NOTHING)
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
 
 
-
-    
 def create_dynamic_models(model_names):
     base_models = [LikeEvent, Registration]
 
@@ -77,8 +70,6 @@ def create_dynamic_models(model_names):
 
 def create_tables(app_name,unique_id):
 
-
-    
     model_names = [app_name + '_'+str(unique_id)+'_likes' ]
     if forumEvents.objects.get(pk=unique_id).register_button_link=='vcec_form':
         model_names.append(app_name+'_'+str(unique_id)+'_registration')

@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse 
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -9,7 +9,7 @@ from .serializers import FormSerializer,FormGetSerializer
 import time,random ,string
 from .models import create_tables,forumEvents,create_dynamic_models
 from django.db import connection
-from psycopg2 import sql    
+
 
 @api_view(['POST'])
 def create_form(request):
@@ -53,8 +53,6 @@ def get_events(request):
     except forumEvents.DoesNotExist:
         return Response({"status": "Forms not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
-
 @api_view(['DELETE'])
 def delete_event(request,pk):
     #deleting image and thumbnail image
@@ -63,9 +61,6 @@ def delete_event(request,pk):
         
     except ob.DoesNotExist:
         return Response({"error": "Image not found."}, status=404)
-    
-    
-
     
     if ob.poster_image:
         ob.poster_image.delete()
@@ -80,11 +75,8 @@ def delete_event(request,pk):
         try:
             cursor= connection.cursor()
             for table_name in tables:
-
                 cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
         
-            
-           
         except forumEvents.DoesNotExist:
             return Response( "Event not found.")
         except Exception as e:
@@ -96,14 +88,7 @@ def delete_event(request,pk):
     ob.delete()
     connection.close()
     return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
-            
-                
-                
-            
-        
-    
-=======
-
+                         
 @api_view(['PUT'])
 def update_form(request,id):
 
@@ -125,8 +110,8 @@ def update_form(request,id):
             table_name="forum_events_forum_events"+'_'+str(id)+'_registration'
             cur.execute(f"UPDATE forum_events_forumevents SET register_button_link='{serializer.data['register_button_link']}' WHERE id={id}")
             if serializer.data['register_button_link']!='vcec_form':
-                delete_query=sql.SQL('DROP TABLE IF EXISTS {};').format(sql.Identifier(table_name))
-                cur.execute(delete_query)
+                cur.execute(f"DROP TABLE IF EXISTS {table_name}")
+                
             else:
                 cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
                 tables = [row[0] for row in cur.fetchall()]
@@ -141,7 +126,6 @@ def update_form(request,id):
         cur.close()
         connection.close()
         return Response(status=status.HTTP_404_NOT_FOUND)
-
 
 @api_view(['GET'])
 def image_file(request, pk):
