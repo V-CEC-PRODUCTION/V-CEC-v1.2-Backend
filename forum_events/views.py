@@ -12,7 +12,7 @@ from django.db import connection
 
 
 @api_view(['POST'])
-def create_form(request):
+def create_event(request):
     serializer=FormSerializer(data=request.data)
     
     if serializer.is_valid():
@@ -90,7 +90,7 @@ def delete_event(request,pk):
     return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
                          
 @api_view(['PUT'])
-def update_form(request,id):
+def update_event(request,id):
 
     serializer=FormSerializer(data=request.data)
     cur=connection.cursor()    
