@@ -39,7 +39,7 @@ def create_timetable(request):
         serializer_instance=serializer.save()
 
         if serializer.data['day']==5:
-            serializer_instance.firsttime='09:00-9:50'
+            serializer_instance.firsttime='09:00-09:50'
             serializer_instance.secondtime='09:50-10:40'
             serializer_instance.thirdtime='10:50-11:40'
             serializer_instance.fourthtime='11:40-12:30'
@@ -92,3 +92,25 @@ def get_currentcodetime(request,id):
         return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
             
 
+
+
+@api_view(['DELETE'])
+def delete_timetable(request, semester, division=None, day=None):
+    try:
+        #Specific day timetable deletion
+        if day is not None:
+            timetable = TimeTable.objects.get(semester=semester, division=division, day=day)
+            timetable.delete()
+            return Response({"status": f"Timetable for S{semester}{division}'s day {day} deleted successfully"}, status=status.HTTP_200_OK)
+        elif division is not None:
+            # Delete a specific divison's timetable
+            timetables = TimeTable.objects.filter(semester=semester, division=division)
+            timetables.delete()
+            return Response({"status": f"Timetable for S{semester}{division} deleted successfully"}, status=status.HTTP_200_OK)
+        else:
+            # Delete the entire semester's timetable 
+            timetables = TimeTable.objects.filter(semester=semester)
+            timetables.delete()
+            return Response({"status": f"Timetable for Semester :{semester} deleted successfully"}, status=status.HTTP_200_OK)
+    except TimeTable.DoesNotExist:
+        return Response({"status": "Timetable records not found"}, status=status.HTTP_404_NOT_FOUND)
