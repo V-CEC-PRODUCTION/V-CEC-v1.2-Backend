@@ -40,8 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
     'users',
     'notices',
     'homepage_images',
@@ -150,6 +148,10 @@ EMAIL_HOST_USER = 'proddecapp@gmail.com'
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
 
+ACCESS_TOKEN_EXPIRATION = 120 # Adjust as needed
+REFRESH_TOKEN_EXPIRATION = 483840 # Adjust as needed
+
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -171,34 +173,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
-}
-
-REST_FRAMEWORK_SIMPLEJWT = {
-    'USER_AUTHENTICATION_RULE': 'users.serializers.CustomTokenObtainPairSerializer',
-    # Other settings...
-}
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-    'SLIDING_TOKEN_LIFETIME': timedelta(days=1),
-    'SLIDING_TOKEN_REFRESH_LIFETIME_GRACE_PERIOD': timedelta(days=7),
-    'SLIDING_TOKEN_REFRESH_EPOCH_GRACE_PERIOD': timedelta(days=7),
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'email',  # Assuming your user model has an 'id' field
-    'USER_ID_CLAIM': 'user_id',
-    'USER_AUTHENTICATION_RULE': 'path.to.CustomTokenObtainPairSerializer',
- 
-}
-
-#AUTH_USER_MODEL = 'users.User' 
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

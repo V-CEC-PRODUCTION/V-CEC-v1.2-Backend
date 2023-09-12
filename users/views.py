@@ -2,23 +2,19 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string 
 from .models import User
-from .serializers import UserSerializer, EmailSerializer, OtpSerializer, CustomTokenObtainPairSerializer
+from .serializers import UserSerializer, EmailSerializer, OtpSerializer
 import random
 from datetime import datetime, timedelta
 from celery import shared_task
-from rest_framework_simplejwt.views import TokenObtainPairView
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
+
+
 
 @api_view(['POST'])
 @shared_task
@@ -26,6 +22,12 @@ def send_otp(request):
     serializer = EmailSerializer(data=request.data)
     if serializer.is_valid():
         user_email = serializer.validated_data['user_email']
+        
+        email_db = User.objects.filter(email=user_email).first()
+        
+        if email_db:
+            return Response({'error': 'Email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        
         otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
         subject = 'Your OTP'
