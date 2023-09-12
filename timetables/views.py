@@ -1,10 +1,10 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 import pandas as pd
-from .serializers import TimeTableSerializer
+from .serializers import TimeTableCurrentSerializer, TimeTableSerializer,TimeTableAdminSerializer,TimeTableClientSerializer             
 from rest_framework.response import Response
 from rest_framework import status
-
+from .models import TimeTable
 # Create your views here.
 @api_view(['POST'])
 def create_timetables(request):
@@ -21,8 +21,8 @@ def create_timetables(request):
             for  j in fields:
                 data[j]=tt[j][i]
             if data['day']==5:
-                data['firsttime']='9-9:50'
-                data['secondtime']='9:50-10:40'
+                data['firsttime']='09-9:50'
+                data['secondtime']='09:50-10:40'
                 data['thirdtime']='10:50-11:40'
                 data['fourthtime']='11:40-12:30'
             serializer=TimeTableSerializer(data=data)
@@ -39,8 +39,8 @@ def create_timetable(request):
         serializer_instance=serializer.save()
 
         if serializer.data['day']==5:
-            serializer_instance.firsttime='9-9:50'
-            serializer_instance.secondtime='9:50-10:40'
+            serializer_instance.firsttime='09:00-9:50'
+            serializer_instance.secondtime='09:50-10:40'
             serializer_instance.thirdtime='10:50-11:40'
             serializer_instance.fourthtime='11:40-12:30'
             
@@ -51,8 +51,44 @@ def create_timetable(request):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-    
+
+@api_view(['GET'])
+def get_timetables(request):
+    try:
+        timetable = TimeTable.objects.all()
+
+        serializer = TimeTableAdminSerializer(timetable, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except TimeTable.DoesNotExist:
+        return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
+
+#get for client    
+@api_view(['GET'])
+def get_clienttimetables(request):
+    try:
+        timetable = TimeTable.objects.all()
+        
+        serializer = TimeTableClientSerializer(timetable, many=True)
+        for data in serializer.data:
+            for field in ['firsttime', 'secondtime', 'thirdtime', 'fourthtime', 'fifthtime', 'sixthtime']:
+                data[field] = data[field].split("-")[0]
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except TimeTable.DoesNotExist:
+        return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
+#cuurentcode, current time
+@api_view(['GET'])
+def get_currentcodetime(request,id):
+    try:
+        timetable = TimeTable.objects.filter(pk=id)
+
+        serializer = TimeTableCurrentSerializer(timetable, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except TimeTable.DoesNotExist:
+        return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
             
 
