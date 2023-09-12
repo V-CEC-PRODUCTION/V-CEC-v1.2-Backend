@@ -12,5 +12,5 @@ urlpatterns = [
     path("logout/api/token/", views.logout_user),
     path('send-otp', views.send_otp, name='send-otp'),
     path('verify-otp', views.verify, name='verify-otp'),
-    path('token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+
 ]
