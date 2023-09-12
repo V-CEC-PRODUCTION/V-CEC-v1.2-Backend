@@ -1,40 +1,37 @@
-from django.contrib.auth.models import BaseUserManager
 from django.db import models
 
-class CustomUserManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError('The Email field must be set')
-        email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
-
-        return self.create_user(email, password, **extra_fields)
-    
 class User(models.Model):
     email = models.CharField(max_length=100)
     password = models.CharField(max_length=130)
     role = models.CharField(max_length=50, default="student")
     logged_in = models.BooleanField(default=False)
     login_type = models.CharField(max_length=50, default="email")
-    
-    USERNAME_FIELD = 'email'
-    
-    objects = CustomUserManager()
+    profile_image = models.ImageField(upload_to='users/profiles/', blank=True, null=True)
+    thumbnail_profile_image = models.ImageField(upload_to='users/thumbnails/', blank=True, null=True)
     
     
-    
+    def save(self, *args, **kwargs):
+        if self.image:
+            self.image_url = f"users/auth/api/images/{self.id}/file/"
+        if self.thumbnail:
+            self.thumbnail_url = f"users/auth//api/images/{self.id}/thumbnail/"
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return str(self.id) 
+        return f"User {self.id}"
+    
+    
+class Token(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    access_token = models.TextField(unique=True)
+    refresh_token = models.TextField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Token for {self.user.id}"
+    
+    
+
 
