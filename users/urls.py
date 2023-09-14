@@ -1,17 +1,21 @@
 from django.urls import path
-from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView,)
+
 from . import views
 
 urlpatterns = [
-    path("get/all", views.get_all_users),
-    path("get/<str:pk>", views.get_user_by_id),
-    path("sign-up/email/", views.sign_up_user),
-    path("update/<str:pk>", views.update_user),
-    path("delete/<str:pk>", views.delete_user),
-    path("login/api/token/email/", views.login_user),
-    path("logout/api/token/", views.logout_user),
-    path('send-otp', views.send_otp, name='send-otp'),
-    path('verify-otp', views.verify, name='verify-otp'),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("get/all", views.GetAllUsers.as_view(), name="get-all-users"),
+    path("get/<str:pk>", views.GetUserById.as_view(), name="get-user-by-id"),
+    path("sign-up/email/", views.SignUpUser.as_view(), name="sign-up-email"),
+    path("sign-up/google/", views.SignUpUserGoogle.as_view(), name="sign-up-google"),
+    path("update/<str:pk>", views.UpdateUser.as_view(), name="update-user"),
+    path("delete/<str:pk>", views.DeleteUser.as_view(), name="delete-user"),
+    path("login/api/token/email/", views.LoginUser.as_view(), name="login-email"),
+    path("login/api/token/google/", views.LoginUserGoogle.as_view(), name="login-email"),
+    path("logout/api/token/", views.LogoutUser.as_view(), name="logout"),
+    path('send-otp/', views.send_otp, name='send-otp'),
+    path('verify-otp/', views.VerifyOtp.as_view(), name='verify-otp'),
+    path('refresh/api/token/', views.RequestAccessToken.as_view(), name='refresh-token'),
+    path('add/user/detail/', views.UserDetails.as_view(), name='add-user-detail'),
+    path('get/user/role/', views.GetUserRole.as_view(), name='get-user-role'),
+    path('validate/access/token/', views.ValidateTokenView.as_view(), name='validate-token'),
 ]

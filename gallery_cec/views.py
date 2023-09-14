@@ -10,6 +10,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from celery import shared_task
 from django.core.cache import cache
 import time, random, json,string, os, cv2, numpy as np
+import redis
 
 @shared_task
 def calculate_frame_score(frame):
@@ -224,7 +225,8 @@ def post_file(request):
             video_instance.save()
             
         gallery_files = 'gallery_files'
-            
+        
+        
         files_list = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
         
         files_result = GalleryGetSerializer(files_list, many=True)
