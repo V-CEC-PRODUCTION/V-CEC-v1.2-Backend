@@ -39,6 +39,8 @@ class LikeEvent(models.Model):
     user = models.ForeignKey(User,on_delete=models.DO_NOTHING,blank=True,null=True)
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
+    is_liked=models.BooleanField(default=False)
+    views=models.BooleanField(default=True)
 
 
 def create_dynamic_models(model_names,unique_id):
