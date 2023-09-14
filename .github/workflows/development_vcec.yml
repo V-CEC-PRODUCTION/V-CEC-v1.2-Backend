@@ -67,7 +67,7 @@ jobs:
     steps:
     
       - name: Install libgli
-        run:  sudo apt-get install -y libgl1-mesa-glx
+        run:  apt-get install -y libgl1-mesa-glx
 
       - name: Install libgli2
-        run:  sudo apt-get install -y libglib2.0-0
+        run:  apt-get install -y libglib2.0-0
