@@ -5,6 +5,7 @@ from .serializers import TimeTableCurrentSerializer, TimeTableSerializer,TimeTab
 from rest_framework.response import Response
 from rest_framework import status
 from .models import TimeTable
+from datetime import datetime,time
 # Create your views here.
 @api_view(['POST'])
 def create_timetables(request):
@@ -21,10 +22,10 @@ def create_timetables(request):
             for  j in fields:
                 data[j]=tt[j][i]
             if data['day']==5:
-                data['firsttime']='09-9:50'
-                data['secondtime']='09:50-10:40'
-                data['thirdtime']='10:50-11:40'
-                data['fourthtime']='11:40-12:30'
+                data['firsttime']='09:00 AM-09:50 AM'
+                data['secondtime']='09:50 AM-10:40 AM'
+                data['thirdtime']='10:50 AM-11:40 AM'
+                data['fourthtime']='11:40 AM-12:30 PM'
             serializer=TimeTableSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -39,10 +40,10 @@ def create_timetable(request):
         serializer_instance=serializer.save()
 
         if serializer.data['day']==5:
-            serializer_instance.firsttime='09:00-09:50'
-            serializer_instance.secondtime='09:50-10:40'
-            serializer_instance.thirdtime='10:50-11:40'
-            serializer_instance.fourthtime='11:40-12:30'
+            serializer_instance.firsttime='09:00 AM-09:50 AM'
+            serializer_instance.secondtime='09:50 AM-10:40 AM'
+            serializer_instance.thirdtime='10:50 AM-11:40 AM'
+            serializer_instance.fourthtime='11:40 AM-12:30 PM'
             
         serializer_instance.save()
         
@@ -114,3 +115,47 @@ def delete_timetable(request, semester, division=None, day=None):
             return Response({"status": f"Timetable for Semester :{semester} deleted successfully"}, status=status.HTTP_200_OK)
     except TimeTable.DoesNotExist:
         return Response({"status": "Timetable records not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+
+
+def AutoTimeTableSystem(request):
+    
+    dayOfTheWeek = datetime.now().isoweekday()
+
+    timetable_times={"firsttime":"firstcode",
+                     "secondtime":"secondcode",
+                     "thirdtime":"thirdcode",
+                     "fourthtime":"fourthcode",
+                     "fifthtime":"fifthcode",
+                     "sixthtime":"sixthcode"}
+    
+    timetable_records=TimeTable.objects.all()
+
+    for i in range(len(timetable_records)):
+
+        serializer=TimeTableSerializer(timetable_records[i])
+        for field in ['firsttime', 'secondtime', 'thirdtime', 'fourthtime', 'fifthtime', 'sixthtime']:
+
+            starttime=serializer.data[field].split("-")[0]
+            tabletime=datetime.strptime(starttime,"%I:%M %p").time().strftime("%H:%M")
+            currenttime=datetime.now().time().strftime("%H:%M")
+
+            if (currenttime=="12:00" and dayOfTheWeek!=5) or (currenttime in ['12:30',"10:40"] and dayOfTheWeek==5):
+                timetable_records[i].currentcode="BREAK"
+
+            elif (datetime.strptime(currenttime,"%H:%M").time()>=time(16,0,0,0) and dayOfTheWeek==timetable_records[i].day):
+                if (dayOfTheWeek==5):
+                    timetable_records[i].currentcode=TimeTable.objects.filter(day=1,semester=timetable_records[i].semester,division=timetable_records[i].division)[0].firstcode
+                else:
+                    timetable_records[i].currentcode=TimeTable.objects.filter(day=dayOfTheWeek+1,semester=timetable_records[i].semester,division=timetable_records[i].division)[0].firstcode
+            
+            elif (tabletime==currenttime) and (serializer.data["day"]==dayOfTheWeek):
+                timetable_records[i].currentcode=serializer.data[timetable_times[field]]
+                timetable_records[i].currenttime=currenttime
+
+            timetable_records[i].save()
+
+
+
+        
