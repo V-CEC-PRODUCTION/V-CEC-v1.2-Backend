@@ -18,6 +18,11 @@ def create_announcement(request):
     
     if serializer.is_valid():
         serializer_instance=serializer.save()
+        if not (serializer_instance.button_name and serializer_instance.button_link):
+            serializer_instance.button_name=''
+            serializer_instance.button_link=''
+        serializer_instance.save()
+            
 
         img = PilImage.open(serializer_instance.poster_image.path)
         img.thumbnail((100, 100))
@@ -53,6 +58,10 @@ def update_announcement(request,id):
          
         if request.data.get('whatsapp_link'):
             cur.execute(f"UPDATE forum_announcements_forumannouncements SET whatsapp_link='{serializer.data['whatsapp_link']}' WHERE id={id}")
+        if request.data.get('button_link'):
+            cur.execute(f"UPDATE forum_announcements_forumannouncements SET button_link='{serializer.data['button_link']}' WHERE id={id}")
+        if request.data.get('button_name'):
+            cur.execute(f"UPDATE forum_announcements_forumannouncements SET button_name='{serializer.data['button_name']}' WHERE id={id}")
 
         cur.close()
         connection.close()
