@@ -28,7 +28,7 @@ class Registration(models.Model):
 
 class LikeEvent(models.Model):
     event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE)
-    user_id = models.CharField(max_length=100)
+    user_id = models.CharField(max_length=100,default='')
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
     is_liked=models.BooleanField(default=False)
