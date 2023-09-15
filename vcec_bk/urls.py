@@ -13,6 +13,8 @@ urlpatterns = [
     path('forum/events/',include('forum_events.urls')),
     path('forum/announcements/',include('forum_announcements.urls')),
     path('timetable/cec/',include('timetables.urls')),
+    path('forum/management/', include('forum_management.urls')),
+    path('forum/stories/', include('forum_stories.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()    

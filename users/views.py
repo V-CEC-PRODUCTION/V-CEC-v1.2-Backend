@@ -8,13 +8,15 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string 
+from forum_stories.models import UserCountStories
+from forum_management.models import AddForum
 from .models import User, Token
 from .serializers import UserSerializer, EmailSerializer, OtpSerializer, UserGoogleSerializer
 import random
 from datetime import datetime, timedelta
 from celery import shared_task
 from .utils import TokenUtil
-import jwt
+import jwt, json
 
 
 
@@ -109,6 +111,16 @@ class SignUpUser(APIView):
             if serializer.is_valid():
                 user = serializer.save()
                 
+
+                converted_data = UserCountStories.objects.values('count').distinct()
+
+                        
+                user_count_stories_instance = UserCountStories(user_id=user, count=converted_data[0]['count'])
+
+                # Save the UserCountStories instance to store the JSON data
+                user_count_stories_instance.save()
+                
+
                 access_token, refresh_token = TokenUtil.generate_tokens(user)
                 
 
@@ -183,6 +195,15 @@ class SignUpUserGoogle(APIView):
                 
                 
                 user = serializer.save()
+                
+                converted_data = UserCountStories.objects.values('count').distinct()
+
+                        
+                user_count_stories_instance = UserCountStories(user_id=user, count=converted_data[0]['count'])
+
+                # Save the UserCountStories instance to store the JSON data
+                user_count_stories_instance.save()
+                
 
                 access_token, refresh_token = TokenUtil.generate_tokens(user)
                 

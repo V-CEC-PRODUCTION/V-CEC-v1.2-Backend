@@ -48,7 +48,9 @@ INSTALLED_APPS = [
     'gallery_cec',
     'forum_events',
     'forum_announcements',
-    'timetables'
+    'timetables',
+    'forum_management',
+    'forum_stories'
 ]
 
 MIDDLEWARE = [
