@@ -137,9 +137,13 @@ CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'
 
 
 CELERY_BEAT_SCHEDULE = {
-    'scrape-every-15-minutes': {
+    'ktu-notices-every-15-minutes': {
         'task': 'notices.tasks.ktu_webs_announce_task',
         'schedule': 900,  # 15 minutes in seconds
+    },
+    'forum-stories-every-1-minutes': {
+        'task': 'forum_stories.tasks.checkIfStoriesExpired',
+        'schedule': 60,  # 1 minutes in seconds
     },
 }
 
@@ -149,7 +153,7 @@ EMAIL_HOST = 'smtp-relay.brevo.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'proddecapp@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+EMAIL_HOST_PASSWORD = 'VvUDbYBCFQKINgrz'
 
 
 ACCESS_TOKEN_EXPIRATION = 120 # Adjust as needed
@@ -183,11 +187,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
-USE_I18N = True
+#USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)

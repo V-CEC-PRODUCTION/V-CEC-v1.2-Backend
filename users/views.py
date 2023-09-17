@@ -44,37 +44,37 @@ def send_otp(request):
         send_mail(subject, '', from_email, [user_email], html_message=html_message)
 
         # Convert the datetime to a string
-        expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+        #expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
         # Store the OTP in the session
-        request.session['otp'] = {
-            'code': otp,
-            'expiry': expiry_time
-        }
+        # request.session['otp'] = {
+        #     'code': otp,
+        #     'expiry': expiry_time
+        # }
 
-        return Response({'message': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
+        return Response({'message': 'OTP sent successfully.','otp': otp}, status=status.HTTP_200_OK)
     
     return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class VerifyOtp(APIView):
-    def post(self, request):
-        serializer = OtpSerializer(data=request.data)
-        if serializer.is_valid():
-            user_entered_otp = serializer.validated_data['user_otp']
-            stored_otp_data = request.session.get('otp')
+# class VerifyOtp(APIView):
+#     def post(self, request):
+#         serializer = OtpSerializer(data=request.data)
+#         if serializer.is_valid():
+#             user_entered_otp = serializer.validated_data['user_otp']
+#             stored_otp_data = request.session.get('otp')
 
-            if stored_otp_data and (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S') < stored_otp_data['expiry']:
-                stored_otp = stored_otp_data['code']
-                if user_entered_otp == stored_otp:
-                    request.session.pop('otp', None)
-                    return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+#             if stored_otp_data and (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S') < stored_otp_data['expiry']:
+#                 stored_otp = stored_otp_data['code']
+#                 if user_entered_otp == stored_otp:
+#                     request.session.pop('otp', None)
+#                     return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
+#                 else:
+#                     return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
                 
-            else:
-                request.session.pop('otp', None)
-                return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+#             else:
+#                 request.session.pop('otp', None)
+#                 return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+#         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 # get all users
 class GetAllUsers(APIView):
@@ -358,6 +358,13 @@ class LoginUserGoogle(APIView):
             
             if user is not None:
                 
+                if user.logged_in:
+                    user_token = Token.objects.get(user_id=user.id)
+                    
+                    user_token.delete()
+                
+                
+                
                 access_token, refresh_token = TokenUtil.generate_tokens(user)
                 
                 # Validate tokens
@@ -383,6 +390,12 @@ class LoginUser(APIView):
             user = User.objects.get(email=request.data['email'], login_type='email')
             
             if user is not None:
+                
+                if user.logged_in:
+                    user_token = Token.objects.get(user_id=user.id)
+                    
+                    user_token.delete()
+                    
                 if check_password(request.data['password'], user.password):
                     # Generate refresh and access tokens
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
@@ -414,7 +427,7 @@ class RequestAccessToken(APIView):
         token_key = Token.objects.filter(refresh_token=refresh_token).first()
         
         if not token_key:
-            return Response({"error": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "refresh token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Validate the refresh token
         refresh_token_payload = TokenUtil.decode_token(refresh_token)
@@ -442,6 +455,25 @@ class RequestAccessToken(APIView):
             user_token.save()
             
             return Response({'access_token': access_token}, status=status.HTTP_200_OK)
+ 
+class ForgotPassword(APIView):
+    def post(self, request):
+        try:
+            user = User.objects.get(email=request.data['email'], login_type='email')
+            
+            if user is not None:
+                user.password = make_password(request.data['password'])
+                
+                user_token = Token.objects.get(user_id=user.id)
+                
+                user_token.delete()
+                
+            else:
+                return Response("User is not registered with google!", status=status.HTTP_400_BAD_REQUEST)
+            
+        except ObjectDoesNotExist:
+            
+            return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
         
 # logout user
 class LogoutUser(APIView):
