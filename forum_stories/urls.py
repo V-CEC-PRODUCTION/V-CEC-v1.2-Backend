@@ -9,4 +9,5 @@ urlpatterns = [
     path('media/<str:pk>/file/', views.ImageFile.as_view(), name='image-file'),  
     path('media/<str:pk>/thumbnail/', views.ThumbnailFile.as_view(), name='image-thumbnail'),
     path('video/media/<str:pk>/file/', views.StreamVideo.as_view(), name='stream-video'),
+    path('get/user/seen/count/', views.GetUserStoriesStatus.as_view(), name='get-user-stories-status'),
 ]
