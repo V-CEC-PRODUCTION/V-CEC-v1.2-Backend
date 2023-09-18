@@ -93,6 +93,23 @@ def get_currentcodetime(request,id):
         return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
             
 
+@api_view(['PUT'])
+def update_timetable(request,semester,division,day):
+    timetable_data = TimeTable.objects.get(semester=semester, division=division, day=day)
+    if request.data.get('firstcode'):
+        timetable_data.firstcode = request.data.get('firstcode')
+    if request.data.get('secondcode'):
+        timetable_data.secondcode = request.data.get('secondcode')
+    if request.data.get('thirdcode'):
+        timetable_data.thirdcode = request.data.get('thirdcode')
+    if request.data.get('fourthcode'):
+        timetable_data.fourthcode = request.data.get('fourthcode')
+    if request.data.get('fifthcode'):
+        timetable_data.fifthcode = request.data.get('fifthcode')
+    if request.data.get('sixthcode'):
+        timetable_data.sixthcode = request.data.get('sixthcode')
+    timetable_data.save()
+    return Response(status=status.HTTP_200_OK)
 
 
 @api_view(['DELETE'])
