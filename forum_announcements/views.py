@@ -11,6 +11,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from .models import create_dynamic_model,forumAnnouncements
 from django.db import connection
 # Create your views here.
+import datetime
 
 @api_view(['POST'])
 def create_announcement(request):
@@ -144,3 +145,11 @@ def get_announcements(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except forumAnnouncements.DoesNotExist:
         return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+
+@api_view(['GET'])
+def Currenttime(request):
+    import datetime
+    dt = datetime.now()
+    dayOfTheWeek = dt.isoweekday()
+    print(dayOfTheWeek)
