@@ -99,12 +99,12 @@ def delete_timetable(request, semester, division=None, day=None):
     try:
         #Specific day timetable deletion
         if day is not None:
-            timetable = TimeTable.objects.get(semester=semester, division=division, day=day)
+            timetable = TimeTable.objects.get(semester=semester, division=division.upper(), day=day)
             timetable.delete()
             return Response({"status": f"Timetable for S{semester}{division}'s day {day} deleted successfully"}, status=status.HTTP_200_OK)
         elif division is not None:
             # Delete a specific divison's timetable
-            timetables = TimeTable.objects.filter(semester=semester, division=division)
+            timetables = TimeTable.objects.filter(semester=semester, division=division.upper())
             timetables.delete()
             return Response({"status": f"Timetable for S{semester}{division} deleted successfully"}, status=status.HTTP_200_OK)
         else:
