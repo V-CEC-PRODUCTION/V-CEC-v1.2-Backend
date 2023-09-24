@@ -95,7 +95,12 @@ class SignUpUser(APIView):
     def post(self,request):
         try:
             data = request.data.copy()
-
+            
+            email_db = User.objects.filter(email=data['email'], login_type='email').first()
+            
+            if email_db:
+                return Response({'error': 'Email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+            
             if 'password' in data:
                 data['password'] = make_password(data['password'])
 
