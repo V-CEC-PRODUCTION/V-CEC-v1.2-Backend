@@ -44,37 +44,37 @@ def send_otp(request):
         send_mail(subject, '', from_email, [user_email], html_message=html_message)
 
         # Convert the datetime to a string
-        #expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+        expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
 
-        # Store the OTP in the session
-        # request.session['otp'] = {
-        #     'code': otp,
-        #     'expiry': expiry_time
-        # }
+
+        request.session['otp'] = {
+            'code': otp,
+            'expiry': expiry_time
+        }
 
         return Response({'message': 'OTP sent successfully.','otp': otp}, status=status.HTTP_200_OK)
     
     return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# class VerifyOtp(APIView):
-#     def post(self, request):
-#         serializer = OtpSerializer(data=request.data)
-#         if serializer.is_valid():
-#             user_entered_otp = serializer.validated_data['user_otp']
-#             stored_otp_data = request.session.get('otp')
+class VerifyOtp(APIView):
+    def post(self, request):
+        serializer = OtpSerializer(data=request.data)
+        if serializer.is_valid():
+            user_entered_otp = serializer.validated_data['user_otp']
+            stored_otp_data = request.session.get('otp')
 
-#             if stored_otp_data and (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S') < stored_otp_data['expiry']:
-#                 stored_otp = stored_otp_data['code']
-#                 if user_entered_otp == stored_otp:
-#                     request.session.pop('otp', None)
-#                     return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
-#                 else:
-#                     return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+            if stored_otp_data and (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S') < stored_otp_data['expiry']:
+                stored_otp = stored_otp_data['code']
+                if user_entered_otp == stored_otp:
+                    request.session.pop('otp', None)
+                    return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
                 
-#             else:
-#                 request.session.pop('otp', None)
-#                 return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
-#         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                request.session.pop('otp', None)
+                return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 # get all users
 class GetAllUsers(APIView):

@@ -145,6 +145,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'forum_stories.tasks.checkIfStoriesExpired',
         'schedule': 60,  # 1 minutes in seconds
     },
+    'student-time-table-every-1-minutes': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': 60,  # 1 minutes in seconds
+    },
 }
 
 # Email Configuration
