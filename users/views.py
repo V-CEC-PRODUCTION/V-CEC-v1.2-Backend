@@ -363,7 +363,8 @@ class LoginUserGoogle(APIView):
             
             if user is not None:
                 
-                if user.logged_in:
+                
+                if user.logged_in and user.device_id != '':
                     user_token = Token.objects.get(user_id=user.id)
                     
                     user_token.delete()
