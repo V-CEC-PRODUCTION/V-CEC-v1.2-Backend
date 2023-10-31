@@ -160,7 +160,7 @@ EMAIL_HOST_USER = 'proddecapp@gmail.com'
 EMAIL_HOST_PASSWORD = 'VvUDbYBCFQKINgrz'
 
 
-ACCESS_TOKEN_EXPIRATION = 5 # Adjust as needed
+ACCESS_TOKEN_EXPIRATION = 120 # Adjust as needed
 REFRESH_TOKEN_EXPIRATION = 483840 # Adjust as needed
 
 
