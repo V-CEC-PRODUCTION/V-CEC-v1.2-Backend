@@ -1,0 +1,3 @@
+- name: Delete Artifact
+  uses: GeekyEggo/delete-artifact@v2.0.0
+            
