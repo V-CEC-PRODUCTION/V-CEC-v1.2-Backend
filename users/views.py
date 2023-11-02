@@ -406,6 +406,7 @@ class LoginUser(APIView):
         try:
             user = User.objects.get(email=request.data['email'], login_type='email')
             
+            
             if user is not None:
                 
                 if user.logged_in:
@@ -432,6 +433,18 @@ class LoginUser(APIView):
         except ObjectDoesNotExist:
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
 
+class CheckEmailExist(APIView): 
+    def post(self,request):
+        try:
+            user = User.objects.get(email=request.data['email'], login_type=request.data['login_type'])
+            
+            if user is not None:
+                return Response("Email already exists!", status=status.HTTP_409_CONFLICT)
+            else:
+                return Response("Email does not exist!", status=status.HTTP_404_NOT_FOUND)
+        
+        except ObjectDoesNotExist:
+            return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
 class RequestAccessToken(APIView):
     def post(self, request):
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
