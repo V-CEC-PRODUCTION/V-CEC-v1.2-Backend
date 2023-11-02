@@ -18,4 +18,5 @@ urlpatterns = [
     path('add/user/detail/', views.UserDetails.as_view(), name='add-user-detail'),
     path('get/user/role/', views.GetUserRole.as_view(), name='get-user-role'),
     path('validate/access/token/', views.ValidateTokenView.as_view(), name='validate-token'),
+    path('check/email/exist/', views.CheckEmailExist.as_view(), name='check-email-exist'),
 ]
