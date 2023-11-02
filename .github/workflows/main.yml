@@ -1,9 +1,9 @@
 name: Remove old artifacts
 
 on:
-  schedule:
-    # Every day at 1am
-    - cron: '0 1 * * *'
+  push:
+    branches:
+      - main  # Adjust the branch name as needed
 
 jobs:
   remove-old-artifacts:
@@ -11,7 +11,11 @@ jobs:
     timeout-minutes: 10
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v2  # This step checks out your repository's code
+
     - name: Remove old artifacts
       uses: c-hive/gha-remove-artifacts@v1
       with:
         age: '1 days'
+
