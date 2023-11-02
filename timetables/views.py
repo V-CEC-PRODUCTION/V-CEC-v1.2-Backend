@@ -5,7 +5,7 @@ from .serializers import TimeTableCurrentSerializer, TimeTableSerializer,TimeTab
 from rest_framework.response import Response
 from rest_framework import status
 from .models import TimeTable
-from datetime import datetime,time
+
 # Create your views here.
 @api_view(['POST'])
 def create_timetables(request):
@@ -81,16 +81,50 @@ def get_clienttimetables(request):
 
 
 #cuurentcode, current time
-@api_view(['GET'])
-def get_currentcodetime(request,id):
-    try:
-        timetable = TimeTable.objects.filter(pk=id)
 
-        serializer = TimeTableCurrentSerializer(timetable, many=True)
-        
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    except TimeTable.DoesNotExist:
-        return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
+class GetCurrentCode(APIView):
+    def get(self,request):
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+                
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+            _, token = authorization_header.split()
+            
+            token_key = Token.objects.filter(access_token=token).first()
+            
+            if not token_key:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+
+            payload = TokenUtil.decode_token(token_key.access_token)
+
+            # Optionally, you can extract user information or other claims from the payload
+            if not payload:
+                return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'The access token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            user = User.objects.get(id=user_id) 
+                
+            
+            dt = datetime.now()
+            
+            day = dt.weekday() + 1
+            print(day)
+            timetable = TimeTable.objects.filter(semester=user.semester,division=user.division,day=day)
+
+            serializer = TimeTableCurrentSerializer(timetable, many=True)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except TimeTable.DoesNotExist:
+            return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
             
 
 @api_view(['PUT'])

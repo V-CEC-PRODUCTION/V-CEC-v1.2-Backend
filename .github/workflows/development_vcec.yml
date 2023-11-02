@@ -27,8 +27,7 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r requirements.txt
- 
-        
+                
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
       
       - name: Upload artifact for deployment jobs
@@ -51,7 +50,8 @@ jobs:
         with:
           name: python-app
           path: .
-          
+
+        
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v2
         id: deploy-to-webapp
@@ -60,7 +60,14 @@ jobs:
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5A9D46270B8F403F9B70043F1009271F }}
 
-      - name: Set up Python for Celery
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
+
+  # Install_dependencies:
+  #   runs-on: ubuntu-latest
+  #   needs: deploy  
+  #   steps:
+    
+  #     - name: Install libgli
+  #       run:  apt-get install -y libgl1-mesa-glx
+
+  #     - name: Install libgli2
+  #       run:  apt-get install -y libglib2.0-0

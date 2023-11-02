@@ -23,38 +23,42 @@ import jwt, json
 @api_view(['POST'])
 @shared_task
 def send_otp(request):
-    serializer = EmailSerializer(data=request.data)
-    if serializer.is_valid():
-        user_email = serializer.validated_data['email']
-        
-        email_db = User.objects.filter(email=user_email, login_type='email').first()
-        
-        if email_db:
-            return {'error': 'Email already exists.'}
-        
-        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    try:
+        serializer = EmailSerializer(data=request.data)
+        if serializer.is_valid():
+            user_email = serializer.validated_data['email']
+            
+            email_db = User.objects.filter(email=user_email, login_type='email').first()
+            
+            if email_db:
+                return Response({'error': 'Email already exists.'}, status=status.HTTP_409_CONFLICT)
+            
+            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
-        subject = 'Your OTP'
+            subject = 'Your OTP'
+            
+            from_email = 'proddecapp@gmail.com'
+            
+            html_message = render_to_string('otp_email_template.html', {'otp': otp})
+
+            # Send the email with HTML content
+            send_mail(subject, '', from_email, [user_email], html_message=html_message)
+
+            # Convert the datetime to a string
+            expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+            request.session['otp'] = {
+                'code': otp,
+                'expiry': expiry_time
+            }
+
+            return Response({'message': 'OTP sent successfully.','otp': otp}, status=status.HTTP_200_OK)
         
-        from_email = 'proddecapp@gmail.com'
-        
-        html_message = render_to_string('otp_email_template.html', {'otp': otp})
-
-        # Send the email with HTML content
-        send_mail(subject, '', from_email, [user_email], html_message=html_message)
-
-        # Convert the datetime to a string
-        expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
-
-        # Store the OTP in the session
-        request.session['otp'] = {
-            'code': otp,
-            'expiry': expiry_time
-        }
-
-        return Response({'message': 'OTP sent successfully.'}, status=status.HTTP_200_OK)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
-    return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyOtp(APIView):
     def post(self, request):
@@ -95,7 +99,12 @@ class SignUpUser(APIView):
     def post(self,request):
         try:
             data = request.data.copy()
-
+            
+            email_db = User.objects.filter(email=data['email'], login_type='email').first()
+            
+            if email_db:
+                return Response({'error': 'Email already exists.'}, status=status.HTTP_409_CONFLICT)
+            
             if 'password' in data:
                 data['password'] = make_password(data['password'])
 
@@ -263,14 +272,21 @@ class UserDetails(APIView):
         try:
             if request.data:
                 
-                user.name = request.data['name']
-                user.branch = request.data['branch']
-                user.semester = request.data['semester']
-                user.division = request.data['division']
-                user.admission_no = request.data['admission_no']
-                user.device_id = request.data['device_id']
-                user.gender = request.data['gender']
-                user.logged_in = True
+                if user.role == 'guest':
+                    user.name = request.data['name']
+                    user.device_id = request.data['device_id']
+                    user.logged_in = True
+                
+                elif user.role == 'student':
+                
+                    user.name = request.data['name']
+                    user.branch = request.data['branch']
+                    user.semester = request.data['semester']
+                    user.division = request.data['division']
+                    user.admission_no = request.data['admission_no']
+                    user.device_id = request.data['device_id']
+                    user.gender = request.data['gender']
+                    user.logged_in = True
                 
                 user.save()      
                     
@@ -358,6 +374,14 @@ class LoginUserGoogle(APIView):
             
             if user is not None:
                 
+                
+                if user.logged_in and user.device_id != '':
+                    user_token = Token.objects.get(user_id=user.id)
+                    
+                    user_token.delete()
+                
+                
+                
                 access_token, refresh_token = TokenUtil.generate_tokens(user)
                 
                 # Validate tokens
@@ -383,6 +407,12 @@ class LoginUser(APIView):
             user = User.objects.get(email=request.data['email'], login_type='email')
             
             if user is not None:
+                
+                if user.logged_in:
+                    user_token = Token.objects.get(user_id=user.id)
+                    
+                    user_token.delete()
+                    
                 if check_password(request.data['password'], user.password):
                     # Generate refresh and access tokens
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
@@ -414,7 +444,7 @@ class RequestAccessToken(APIView):
         token_key = Token.objects.filter(refresh_token=refresh_token).first()
         
         if not token_key:
-            return Response({"error": "Invalid refresh token."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "refresh token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Validate the refresh token
         refresh_token_payload = TokenUtil.decode_token(refresh_token)
@@ -442,6 +472,25 @@ class RequestAccessToken(APIView):
             user_token.save()
             
             return Response({'access_token': access_token}, status=status.HTTP_200_OK)
+ 
+class ForgotPassword(APIView):
+    def post(self, request):
+        try:
+            user = User.objects.get(email=request.data['email'], login_type='email')
+            
+            if user is not None:
+                user.password = make_password(request.data['password'])
+                
+                user_token = Token.objects.get(user_id=user.id)
+                
+                user_token.delete()
+                
+            else:
+                return Response("User is not registered with google!", status=status.HTTP_400_BAD_REQUEST)
+            
+        except ObjectDoesNotExist:
+            
+            return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
         
 # logout user
 class LogoutUser(APIView):

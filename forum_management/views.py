@@ -26,6 +26,7 @@ class CreateForum(APIView):
                         
             if image_instance.forum_image:
                 img = PilImage.open(image_instance.forum_image.path)
+                img = img.convert('RGB')
                 img.thumbnail((100, 100))
                 thumb_io = BytesIO()
                 img.save(thumb_io, format='JPEG')
@@ -62,17 +63,20 @@ class CreateForum(APIView):
 
                 converted_data = {item['forum_role_name']: 0 for item in roles_list}
 
-                user_count_stories_instance = UserCountStories(user_id=user_instance, count=converted_data)
+                user_count_stories_instance = UserCountStories(user_id=user_instance, count=json.dumps(converted_data))
 
                 # Save the UserCountStories instance to store the JSON data
                 user_count_stories_instance.save()
                 
                 user_stories_count = UserCountStories.objects.all()
                 
+                
                 if user_stories_count:
                     
                     for record in user_stories_count:
-                        record.count = converted_data
+                        
+                        
+                        record.count = json.dumps(converted_data)
                         record.save()
                 
             else:
@@ -140,6 +144,22 @@ class DeleteForum(APIView):
         try:
             ob = AddForum.objects.filter(id=pk).first()
             
+            user_count = UserCountStories.objects.all()
+            
+            if user_count:
+                
+                for record in user_count:
+                    data = json.loads(record.count)  
+
+                    if ob.forum_role_name in data:
+                        del data[ob.forum_role_name ] 
+        
+                    updated_json = json.dumps(data)
+
+                    record.json_field = updated_json
+
+                    record.save()
+                    
             forum = User.objects.filter(email=ob.email_id, login_type='google').first()
             
             if forum:
@@ -153,7 +173,7 @@ class DeleteForum(APIView):
                 
             ob.delete()
             
-            
+
             
             return Response({"message": "Record Deleted successfully."},status=status.HTTP_200_OK)
         except AddForum.DoesNotExist:
