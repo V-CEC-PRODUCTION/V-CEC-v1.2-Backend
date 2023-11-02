@@ -9,7 +9,14 @@ from .serializers import FormSerializer,FormGetSerializer
 import time,random ,string
 from .models import create_tables,forumEvents,create_dynamic_models
 from django.db import connection
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
 
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 @api_view(['POST'])
 def create_event(request):
@@ -27,6 +34,8 @@ def create_event(request):
         timestamp = int(time.time())
         random_string = ''.join(random.choices(string.ascii_letters, k=6))
         unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
+        serializer_instance.hashtags=extract_unique_meaningful_words(serializer_instance.content)
+        serializer_instance.save()
 
         thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
         serializer_instance.thumbnail_poster_image.save(unique_filename, thumbnail, save=True)
@@ -164,3 +173,21 @@ def thumbnail_file(request, pk):
             return response
 
     return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+def extract_unique_meaningful_words(text):
+   
+    words = word_tokenize(text)
+    words = [word.lower() for word in words if word.isalnum()]
+    stop_words = set(stopwords.words('english'))
+    words = [word for word in words if word not in stop_words and not word.isdigit()]
+    lemmatizer = WordNetLemmatizer()
+    words = [lemmatizer.lemmatize(word) for word in words]
+
+    words = [word for word in words if len(word) > 2]
+
+    unique_words = set(words)
+
+    return unique_words
