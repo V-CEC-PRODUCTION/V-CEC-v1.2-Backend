@@ -171,6 +171,7 @@ def delete_timetable(request, semester, division=None, day=None):
     except TimeTable.DoesNotExist:
         return Response({"status": "Timetable records not found"}, status=status.HTTP_404_NOT_FOUND)
     
+
     
 
 

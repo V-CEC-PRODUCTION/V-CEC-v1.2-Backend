@@ -5,6 +5,7 @@ from celery import shared_task
 
 @shared_task
 def AutoTimeTableSystem():
+    
     dayOfTheWeek = datetime.now().isoweekday()
 
     timetable_times={"firsttime":"firstcode",
@@ -14,7 +15,7 @@ def AutoTimeTableSystem():
                      "fifthtime":"fifthcode",
                      "sixthtime":"sixthcode"}
     
-    timetable_records=TimeTable.objects.all()
+    timetable_records=TimeTable.objects.filter(day=dayOfTheWeek)
 
     for i in range(len(timetable_records)):
 
@@ -36,6 +37,6 @@ def AutoTimeTableSystem():
             
             elif (tabletime==currenttime) and (serializer.data["day"]==dayOfTheWeek):
                 timetable_records[i].currentcode=serializer.data[timetable_times[field]]
-                timetable_records[i].currenttime=currenttime
+            timetable_records[i].currenttime=datetime.now().time().strftime("%I:%M %p")
 
             timetable_records[i].save()

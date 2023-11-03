@@ -10,7 +10,7 @@ urlpatterns=[
     path('delete-timetable/<str:semester>/<str:division>/<int:day>/', delete_timetable, name='delete_timetable'),
     path('delete-timetable/<str:semester>/<str:division>/', delete_timetable, name='delete_timetablesemdiv'),
     path('delete-timetable/<str:semester>/', delete_timetable, name='delete_timetablesem'),
-    path('update-timetable/<str:semester>/<str:division>/<int:day>/', update_timetable, name='update_timetable')
+    path('update-timetable/<str:semester>/<str:division>/<int:day>/', update_timetable, name='update_timetable'),
 
 
 
