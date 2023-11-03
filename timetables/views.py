@@ -19,13 +19,14 @@ def create_timetables(request):
     
         fields=['firstcode','secondcode','thirdcode','fourthcode','fifthcode','sixthcode','day','semester','division']
         listofrcrd=list(tt['day'].keys())
-        data={}
+        
     
         for i in listofrcrd:
+            data={}
             for  j in fields:
                 data[j]=tt[j][i]
             if data['day']==5:
-                data['firsttime']='09-9:50'
+                data['firsttime']='09:00-09:50'
                 data['secondtime']='09:50-10:40'
                 data['thirdtime']='10:50-11:40'
                 data['fourthtime']='11:40-12:30'
