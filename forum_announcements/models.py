@@ -8,6 +8,8 @@ class forumAnnouncements(models.Model):
     poster_image_url = models.TextField(blank=True,null=True)
     thumbnail_poster_image = models.ImageField(upload_to='forum/announcements/thumbnails/', blank=True, null=True) 
     thumbnail_poster_image_url = models.TextField(blank=True,null=True) 
+    button_link = models.TextField(blank=True,null=True)
+    button_name = models.TextField(blank=True,null=True)
     whatsapp_link = models.TextField(blank=True,null=True)
     publish_date = models.DateTimeField(auto_now_add=True)
     published_by = models.CharField(max_length=100,blank=True)
@@ -22,8 +24,8 @@ class forumAnnouncements(models.Model):
         super().save(*args, **kwargs)
     
 class LikeAnnouncement(models.Model):
-    event_id = models.IntegerField(default=0)
-    user = models.ForeignKey(User,on_delete=models.DO_NOTHING,blank=True,null=True)
+    event_id = models.ForeignKey(User,on_delete=models.CASCADE,blank=True,null=True)
+    user = models.IntegerField(default=0)
     name = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
     is_liked= models.BooleanField(default=False)

@@ -5,7 +5,6 @@ from celery import shared_task
 
 @shared_task
 def AutoTimeTableSystem():
-    
     dayOfTheWeek = datetime.now().isoweekday()
 
     timetable_times={"firsttime":"firstcode",

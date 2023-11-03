@@ -23,58 +23,62 @@ import jwt, json
 @api_view(['POST'])
 @shared_task
 def send_otp(request):
-    serializer = EmailSerializer(data=request.data)
-    if serializer.is_valid():
-        user_email = serializer.validated_data['email']
-        
-        email_db = User.objects.filter(email=user_email, login_type='email').first()
-        
-        if email_db:
-            return {'error': 'Email already exists.'}
-        
-        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+    try:
+        serializer = EmailSerializer(data=request.data)
+        if serializer.is_valid():
+            user_email = serializer.validated_data['email']
+            
+            email_db = User.objects.filter(email=user_email, login_type='email').first()
+            
+            if email_db:
+                return Response({'error': 'Email already exists.'}, status=status.HTTP_409_CONFLICT)
+            
+            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
-        subject = 'Your OTP'
+            subject = 'Your OTP'
+            
+            from_email = 'proddecapp@gmail.com'
+            
+            html_message = render_to_string('otp_email_template.html', {'otp': otp})
+
+            # Send the email with HTML content
+            send_mail(subject, '', from_email, [user_email], html_message=html_message)
+
+            # Convert the datetime to a string
+            expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
+
+
+            request.session['otp'] = {
+                'code': otp,
+                'expiry': expiry_time
+            }
+
+            return Response({'message': 'OTP sent successfully.','otp': otp}, status=status.HTTP_200_OK)
         
-        from_email = 'proddecapp@gmail.com'
-        
-        html_message = render_to_string('otp_email_template.html', {'otp': otp})
-
-        # Send the email with HTML content
-        send_mail(subject, '', from_email, [user_email], html_message=html_message)
-
-        # Convert the datetime to a string
-        #expiry_time = (datetime.now() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%S')
-
-        # Store the OTP in the session
-        # request.session['otp'] = {
-        #     'code': otp,
-        #     'expiry': expiry_time
-        # }
-
-        return Response({'message': 'OTP sent successfully.','otp': otp}, status=status.HTTP_200_OK)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
-    return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# class VerifyOtp(APIView):
-#     def post(self, request):
-#         serializer = OtpSerializer(data=request.data)
-#         if serializer.is_valid():
-#             user_entered_otp = serializer.validated_data['user_otp']
-#             stored_otp_data = request.session.get('otp')
+class VerifyOtp(APIView):
+    def post(self, request):
+        serializer = OtpSerializer(data=request.data)
+        if serializer.is_valid():
+            user_entered_otp = serializer.validated_data['user_otp']
+            stored_otp_data = request.session.get('otp')
 
-#             if stored_otp_data and (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S') < stored_otp_data['expiry']:
-#                 stored_otp = stored_otp_data['code']
-#                 if user_entered_otp == stored_otp:
-#                     request.session.pop('otp', None)
-#                     return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
-#                 else:
-#                     return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+            if stored_otp_data and (datetime.now()).strftime('%Y-%m-%dT%H:%M:%S') < stored_otp_data['expiry']:
+                stored_otp = stored_otp_data['code']
+                if user_entered_otp == stored_otp:
+                    request.session.pop('otp', None)
+                    return Response({'message': 'OTP verification successful.'}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'error': 'OTP verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
                 
-#             else:
-#                 request.session.pop('otp', None)
-#                 return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
-#         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                request.session.pop('otp', None)
+                return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 # get all users
 class GetAllUsers(APIView):
@@ -95,7 +99,12 @@ class SignUpUser(APIView):
     def post(self,request):
         try:
             data = request.data.copy()
-
+            
+            email_db = User.objects.filter(email=data['email'], login_type='email').first()
+            
+            if email_db:
+                return Response({'error': 'Email already exists.'}, status=status.HTTP_409_CONFLICT)
+            
             if 'password' in data:
                 data['password'] = make_password(data['password'])
 
@@ -263,14 +272,21 @@ class UserDetails(APIView):
         try:
             if request.data:
                 
-                user.name = request.data['name']
-                user.branch = request.data['branch']
-                user.semester = request.data['semester']
-                user.division = request.data['division']
-                user.admission_no = request.data['admission_no']
-                user.device_id = request.data['device_id']
-                user.gender = request.data['gender']
-                user.logged_in = True
+                if user.role == 'guest':
+                    user.name = request.data['name']
+                    user.device_id = request.data['device_id']
+                    user.logged_in = True
+                
+                elif user.role == 'student':
+                
+                    user.name = request.data['name']
+                    user.branch = request.data['branch']
+                    user.semester = request.data['semester']
+                    user.division = request.data['division']
+                    user.admission_no = request.data['admission_no']
+                    user.device_id = request.data['device_id']
+                    user.gender = request.data['gender']
+                    user.logged_in = True
                 
                 user.save()      
                     
@@ -358,7 +374,8 @@ class LoginUserGoogle(APIView):
             
             if user is not None:
                 
-                if user.logged_in:
+                
+                if user.logged_in and user.device_id != '':
                     user_token = Token.objects.get(user_id=user.id)
                     
                     user_token.delete()
@@ -389,6 +406,7 @@ class LoginUser(APIView):
         try:
             user = User.objects.get(email=request.data['email'], login_type='email')
             
+            
             if user is not None:
                 
                 if user.logged_in:
@@ -415,6 +433,18 @@ class LoginUser(APIView):
         except ObjectDoesNotExist:
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
 
+class CheckEmailExist(APIView): 
+    def post(self,request):
+        try:
+            user = User.objects.get(email=request.data['email'], login_type=request.data['login_type'])
+            
+            if user is not None:
+                return Response("Email already exists!", status=status.HTTP_409_CONFLICT)
+            else:
+                return Response("Email does not exist!", status=status.HTTP_404_NOT_FOUND)
+        
+        except ObjectDoesNotExist:
+            return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
 class RequestAccessToken(APIView):
     def post(self, request):
         authorization_header = request.META.get("HTTP_AUTHORIZATION")
