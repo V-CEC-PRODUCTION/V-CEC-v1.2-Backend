@@ -15,6 +15,7 @@ urlpatterns = [
     path('timetable/cec/',include('timetables.urls')),
     path('forum/management/', include('forum_management.urls')),
     path('forum/stories/', include('forum_stories.urls')),
+    path('team_score/update/', include('live_update_board.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()    

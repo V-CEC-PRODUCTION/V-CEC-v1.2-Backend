@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scores</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div style='display:flex;justify-content:space-around;' id="scoreboard">
+        <!-- Messages will be displayed here -->
+    </div>
+
+    <script>
+        // WebSocket URL (update with your WebSocket server URL)
+        const wsUrl = 'ws://127.0.0.1:8000/all/team/score/board/realtimeupdate/';
+
+            
+        // Establish a WebSocket connection
+        const socket = new WebSocket(wsUrl);
+
+        // Handle messages from the WebSocket server
+        socket.onmessage = function(event) {
+            const message = JSON.parse(event.data);
+            updateMessage(message);
+        };
+
+        // Update a message on the UI
+        function updateMessage(message) {
+            const scoreboard = document.getElementById('scoreboard');
+            const existingMessage = scoreboard.querySelector(`div[data-team="${message.team}"]`);
+
+            if (existingMessage) {
+                // Update the existing message
+                existingMessage.innerText = `Team: ${message.team}, Score: ${message.score}`;
+            } else {
+                // Create a new message
+                const messageDiv = document.createElement('div');
+                messageDiv.setAttribute('data-team', message.team);
+                messageDiv.innerText = `Team: ${message.team}, Score: ${message.score}`;
+                scoreboard.appendChild(messageDiv);
+            }
+        }
+    </script>
+</body>
+</html>
