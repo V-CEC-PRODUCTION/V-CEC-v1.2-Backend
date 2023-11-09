@@ -19,9 +19,10 @@ def create_timetables(request):
     
         fields=['firstcode','secondcode','thirdcode','fourthcode','fifthcode','sixthcode','day','semester','division']
         listofrcrd=list(tt['day'].keys())
-        data={}
+        
     
         for i in listofrcrd:
+            data={}
             for  j in fields:
                 data[j]=tt[j][i]
             if data['day']==5:
@@ -170,6 +171,7 @@ def delete_timetable(request, semester, division=None, day=None):
     except TimeTable.DoesNotExist:
         return Response({"status": "Timetable records not found"}, status=status.HTTP_404_NOT_FOUND)
     
+
     
 
 
