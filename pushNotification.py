@@ -10,9 +10,9 @@ push_service = FCMNotification(api_key="AAAA0VFMIUc:APA91bFMe4mI8B9F96q1pmnSfd-b
 # print (result)
  
 # Send to multiple devices by passing a list of ids.
-registration_ids = ["72651781ed1e567f"]
-message_title = "Title multiple"
-message_body = "Hello world!"
+registration_ids = ["ebrlDETpQNyVusBXcDIJg1:APA91bHymIhvg-3xnXTWQWFvzTPm_7-Qc0gQjkZZUzGWqq_ua6Qsb-Rs65Ja6k2J0E_IwkhxfryW4AA2vUcQpH8j2r7vFJFbGdr0SAbO-oyAzaB1kSMAvarAJvk3rYc7-dVU7nl9hfqj"]
+message_title = 'Hello alvin ikka' 
+message_body = 'I love you so much'
 result=push_service.notify_multiple_devices(registration_ids=registration_ids, message_title=message_title, message_body=message_body)
  
 print (result)

@@ -33,6 +33,9 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'channels_postgres',
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,13 +53,15 @@ INSTALLED_APPS = [
     'forum_announcements',
     'timetables',
     'forum_management',
-    'forum_stories'
+    'forum_stories',
+    'live_update_board',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    #'channels.middleware.WebSocketMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -108,8 +113,32 @@ DATABASES = {
         'PASSWORD': '@proddec2023',      # Database password
         'HOST': 'vcec.postgres.database.azure.com',                       # Database host (default is 'localhost')
         'PORT': '5432',                            # Database port (default is '5432')
-    }
+    },
+      
+  	'channels_postgres': {
+		'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'vcec',              # Database name
+        'USER': 'vcec_1',              # Database user
+        'PASSWORD': '@proddec2023',      # Database password
+        'HOST': 'vcec.postgres.database.azure.com',                       # Database host (default is 'localhost')
+        'PORT': '5432',  
+	}
 }
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_postgres.core.PostgresChannelLayer',
+        'CONFIG': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'vcec',              # Database name
+            'USER': 'vcec_1',              # Database user
+            'PASSWORD': '@proddec2023',      # Database password
+            'HOST': 'vcec.postgres.database.azure.com',                       # Database host (default is 'localhost')
+            'PORT': '5432', 
+        },
+    },
+}
+
 
 CACHES = {
     'default': {
@@ -127,6 +156,7 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
+ASGI_APPLICATION = "vcec_bk.routing.application"
 
 # Celery settings
 CELERY_BROKER_URL = 'rediss://:mR1pEV4aiMNSGJeCI9QIhifJxRo2QcQy3AzCaHBT0lc=@vcec.redis.cache.windows.net:6380'+ '?ssl_cert_reqs=none'
@@ -148,6 +178,10 @@ CELERY_BEAT_SCHEDULE = {
     'student-time-table-every-1-minutes': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
         'schedule': 60,  # 1 minutes in seconds
+    },
+    'Score-Board': {
+        'task': 'live_update_board.tasks.RealTimeTask',
+        'schedule': 15 # this means, the task will run itself every second
     },
 }
 
