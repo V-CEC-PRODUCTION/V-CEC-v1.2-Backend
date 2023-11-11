@@ -61,12 +61,11 @@ INSTALLED_APPS = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://localhost:4200",
-    "http://sapadminportal.online.s3-website-us-east-1.amazonaws.com",
+    "http://localhost:4200", 
     "https://localhost:3000",
+    "http://localhost:5173", 
+    "https://localhost:5173",
     "https://localhost:4200",
-    "https://ecube-test-67149.web.app",
-    "https://ecube-test-67149.firebaseapp.com",
   ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -84,7 +83,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'channels.middleware.WebSocketMiddleware',
+    'channels.middleware.WebSocketMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
