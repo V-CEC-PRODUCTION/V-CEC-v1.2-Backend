@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'channels',
     'channels_postgres',
     'daphne',
@@ -54,7 +55,6 @@ INSTALLED_APPS = [
     'timetables',
     'forum_management',
     'forum_stories',
-    'corsheaders',
     'fixtures_ashwa',
     'live_update_board',
 ]
@@ -82,9 +82,9 @@ CORS_ALLOW_METHODS = (
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'channels.middleware.WebSocketMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
