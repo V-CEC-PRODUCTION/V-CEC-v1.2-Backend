@@ -54,14 +54,37 @@ INSTALLED_APPS = [
     'timetables',
     'forum_management',
     'forum_stories',
+    'corsheaders',
+    'fixtures_ashwa',
     'live_update_board',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:4200", 
+    "https://localhost:3000",
+    "http://localhost:5173", 
+    "https://localhost:5173",
+    "https://localhost:4200",
+  ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_METHODS = (
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'channels.middleware.WebSocketMiddleware',
+    'channels.middleware.WebSocketMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -181,7 +204,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'Score-Board': {
         'task': 'live_update_board.tasks.RealTimeTask',
-        'schedule': 15 # this means, the task will run itself every second
+        'schedule': 20 # this means, the task will run itself every second
     },
 }
 

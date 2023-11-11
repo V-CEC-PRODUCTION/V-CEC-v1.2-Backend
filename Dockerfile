@@ -1,4 +1,5 @@
-FROM python:3.11.4-slim-buster
+# Use the official Python image as a parent image
+FROM python:3.11.4-slim-buster 
 
 WORKDIR /app
 RUN apt-get update && apt-get install -y libgl1-mesa-glx && apt-get install -y libglib2.0-0
@@ -22,3 +23,4 @@ RUN pip install -r requirements.txt
 
 
 CMD ["python3","manage.py","runserver","0.0.0.0:8002"]
+
