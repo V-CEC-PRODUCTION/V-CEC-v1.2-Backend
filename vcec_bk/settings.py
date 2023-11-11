@@ -54,8 +54,31 @@ INSTALLED_APPS = [
     'timetables',
     'forum_management',
     'forum_stories',
+    'corsheaders',
+    'fixtures_ashwa',
     'live_update_board',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:4200",
+    "http://sapadminportal.online.s3-website-us-east-1.amazonaws.com",
+    "https://localhost:3000",
+    "https://localhost:4200",
+    "https://ecube-test-67149.web.app",
+    "https://ecube-test-67149.firebaseapp.com",
+  ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_METHODS = (
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

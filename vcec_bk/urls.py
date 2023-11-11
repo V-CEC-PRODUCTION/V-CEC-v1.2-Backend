@@ -16,6 +16,7 @@ urlpatterns = [
     path('forum/management/', include('forum_management.urls')),
     path('forum/stories/', include('forum_stories.urls')),
     path('team_score/update/', include('live_update_board.urls')),
+    path('fixtures/ashwa/', include('fixtures_ashwa.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()    
