@@ -204,7 +204,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'Score-Board': {
         'task': 'live_update_board.tasks.RealTimeTask',
-        'schedule': 20 # this means, the task will run itself every second
+        'schedule': 30 # this means, the task will run itself every second
     },
 }
 
