@@ -2,12 +2,14 @@ from .models import TimeTable
 from datetime import datetime, time
 from .serializers import TimeTableSerializer
 from celery import shared_task
+from timetables.consumers import TimeTableConsumer
 
 @shared_task
 def AutoTimeTableSystem():
     
     dayOfTheWeek = datetime.now().isoweekday()
-
+    
+    print("Day of the week: ",dayOfTheWeek)
     timetable_times={"firsttime":"firstcode",
                      "secondtime":"secondcode",
                      "thirdtime":"thirdcode",
@@ -15,7 +17,11 @@ def AutoTimeTableSystem():
                      "fifthtime":"fifthcode",
                      "sixthtime":"sixthcode"}
     
-    timetable_records=TimeTable.objects.filter(day=dayOfTheWeek)
+    if dayOfTheWeek in [6,7]:
+        dayOfTheWeek=5
+    
+    timetable_records=TimeTable.objects.filter(day=dayOfTheWeek).all()
+    
 
     for i in range(len(timetable_records)):
 
@@ -40,3 +46,7 @@ def AutoTimeTableSystem():
             timetable_records[i].currenttime=starttime
 
             timetable_records[i].save()
+            
+            team_score_update = TimeTableConsumer()
+            
+            team_score_update.cur_subject_and_time_changed(instance=timetable_records[i])  

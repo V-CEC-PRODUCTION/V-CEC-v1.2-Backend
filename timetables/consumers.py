@@ -9,6 +9,7 @@ from channels.layers import get_channel_layer
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from asgiref.sync import async_to_sync
+
 class TimeTableConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -18,10 +19,10 @@ class TimeTableConsumer(AsyncWebsocketConsumer):
         self.current_day_datetime = datetime.date.today().weekday() + 1
         
     @receiver(post_save, sender=TimeTable)
-    def team_score_changed(self,sender, instance, **kwargs):
+    def cur_subject_and_time_changed(sender, instance, **kwargs):
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"timetable_{self.user_semester[1:]}_{self.user_division}_{self.current_day_datetime}",
+            f"timetable_cec",
             {
                 "type": "update_message",
                 "id": instance.id,
@@ -81,23 +82,26 @@ class TimeTableConsumer(AsyncWebsocketConsumer):
         if self.current_day_datetime in [6, 7]:
             self.current_day_datetime = 5
         
-        timetable = await database_sync_to_async(TimeTable.objects.get)(semester=self.user_semester[1:], division=self.user_division, day=self.current_day_datetime)
+        timetable_instance = await database_sync_to_async(TimeTable.objects.get)(semester=self.user_semester[1:], division=self.user_division, day=self.current_day_datetime)
         
-        print(timetable.currentcode, timetable.currenttime)
+        print(timetable_instance.currentcode, timetable_instance.currenttime)
         
-        self.room_group_name = f"timetable_{self.user_semester[1:]}_{self.user_division}_{self.current_day_datetime}"
+        self.room_group_name = f"timetable_cec"
 
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
+        
+        print("Room Group Name:", self.room_group_name)
+
         # Accept the connection
         await self.accept()
         
         await self.send(text_data=json.dumps({
-            "id": timetable.id,
-            "current_code": timetable.currentcode,
-            "current_time": timetable.currenttime,
+            "id": timetable_instance.id,
+            "current_code": timetable_instance.currentcode,
+            "current_time": timetable_instance.currenttime,
         }))
         
             
