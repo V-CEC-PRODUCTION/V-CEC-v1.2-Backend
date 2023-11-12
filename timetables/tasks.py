@@ -43,6 +43,7 @@ def AutoTimeTableSystem():
             
             elif (tabletime==currenttime) and (serializer.data["day"]==dayOfTheWeek):
                 timetable_records[i].currentcode=serializer.data[timetable_times[field]]
+                
             timetable_records[i].currenttime=starttime
 
             timetable_records[i].save()
