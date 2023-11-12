@@ -6,18 +6,29 @@ class forumEvents(models.Model):
     title = models.TextField()
     content = models.TextField(blank=True,null=True)
     poster_image = models.ImageField(upload_to='forum/events/posters/')
+    poster_image_url=models.TextField(blank=True,null=True) 
     thumbnail_poster_image = models.ImageField(upload_to='forum/events/thumbnails/', blank=True, null=True) 
+    thumbnail_poster_image_url=models.TextField(blank=True,null=True) 
     register_button_link = models.TextField(default='vcec_form',blank=True,null=True)
     whatsapp_link = models.TextField(blank=True,null=True)
     status = models.CharField(max_length=10,default='Upcoming')
     publish_date = models.DateTimeField(auto_now_add=True)
     published_by = models.CharField(max_length=100)
     hashtags = models.TextField(blank=True,null=True)
+
+        
+    def save(self, *args, **kwargs):
+        if self.poster_image:
+            self.poster_image_url = f"forum/events/cec/api/events/{self.id}/file/"
+        if self.thumbnail_poster_image:
+            self.thumbnail_poster_image_url = f"forum/events/cec/api/events/{self.id}/thumbnail/"
+
+        super().save(*args, **kwargs)
     
     
 class Registration(models.Model):
     name = models.TextField()
-    event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE,) 
+    event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE) 
     semester = models.CharField(max_length=10)
     division = models.CharField(max_length=10)
     email = models.TextField()
@@ -64,7 +75,7 @@ def create_dynamic_models(model_names):
 
 
 def create_tables(app_name,unique_id):
-    model_names = [app_name + str(unique_id)+'_likes', app_name+str(unique_id)+'_registration']
+    model_names = [app_name +"_"+ str(unique_id)+'_likes', app_name+"_"+str(unique_id)+'_registration']
     create_dynamic_models(model_names)
 # def create_like_event_model(event):
 #     class_name = f'LikeEvent{event.id}'

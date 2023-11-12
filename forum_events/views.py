@@ -79,6 +79,7 @@ def delete_event(request,pk):
     tables=["forum_events_forum_events"+ '_'+str(ob.id)+'_likes', "forum_events_forum_events"+'_'+str(ob.id)+'_registration']
 
     
+    ob.delete()
     if ob.register_button_link=='vcec_form':
 
         try:
@@ -94,7 +95,6 @@ def delete_event(request,pk):
         cursor=connection.cursor()
         cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
 
-    ob.delete()
     connection.close()
     return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
             
