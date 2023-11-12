@@ -200,7 +200,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'student-time-table-every-1-minutes': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': 60,  # 1 minutes in seconds
+        'schedule': 30,  # 1 minutes in seconds
     },
     'Score-Board': {
         'task': 'live_update_board.tasks.RealTimeTask',
@@ -217,7 +217,7 @@ EMAIL_HOST_USER = 'proddecapp@gmail.com'
 EMAIL_HOST_PASSWORD = 'VvUDbYBCFQKINgrz'
 
 
-ACCESS_TOKEN_EXPIRATION = 5 # Adjust as needed
+ACCESS_TOKEN_EXPIRATION = 20 # Adjust as needed
 REFRESH_TOKEN_EXPIRATION = 483840 # Adjust as needed
 
 
