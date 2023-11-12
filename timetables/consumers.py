@@ -9,7 +9,7 @@ from channels.layers import get_channel_layer
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from asgiref.sync import async_to_sync
-
+import inflect
 class TimeTableConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -20,9 +20,13 @@ class TimeTableConsumer(AsyncWebsocketConsumer):
         
     @receiver(post_save, sender=TimeTable)
     def cur_subject_and_time_changed(sender, instance, **kwargs):
+        p = inflect.engine()
+      
+        user_semester_str = p.number_to_words(instance.semester)
+        current_day_str = p.number_to_words(instance.day)
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"timetable_cec",
+            f"timetable_{user_semester_str}_{current_day_str}_{str.lower(instance.division)}",
             {
                 "type": "update_message",
                 "id": instance.id,
@@ -32,6 +36,10 @@ class TimeTableConsumer(AsyncWebsocketConsumer):
             }
         )
         
+    def number_to_words(self,number):
+        p = inflect.engine()
+        return p.number_to_words(number)
+    
     async def send_error_message(self, error_message):
         # Send an error message to the client
         await self.send(text_data=json.dumps({
@@ -86,7 +94,10 @@ class TimeTableConsumer(AsyncWebsocketConsumer):
         
         print(timetable_instance.currentcode, timetable_instance.currenttime)
         
-        self.room_group_name = f"timetable_cec"
+        user_semester_str = self.number_to_words(timetable_instance.semester)
+        current_day_str = self.number_to_words(self.current_day_datetime)
+        
+        self.room_group_name = f"timetable_{user_semester_str}_{current_day_str}_{str.lower(timetable_instance.division)}"
 
         await self.channel_layer.group_add(
             self.room_group_name,
