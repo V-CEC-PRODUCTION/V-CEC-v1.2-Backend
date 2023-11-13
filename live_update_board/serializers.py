@@ -1,7 +1,12 @@
 from rest_framework import serializers
-from .models import TeamScore
+from .models import TeamScore, TeamItems
 
 class TeamScoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamScore
-        fields = ('score', 'team')
+        fields = ('id','score', 'team')
+        
+class TeamItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamItems
+        fields = ('item_id','item', 'points')

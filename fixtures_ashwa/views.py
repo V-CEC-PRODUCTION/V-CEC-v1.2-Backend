@@ -52,11 +52,15 @@ class FixturesView(APIView):
                 print('No data found.')
                 return
 
-            fixtures_result = []
+            fixtures_result_before = []
+            fixtures_result_after = []
             ind_fixtures = {}
             
             current_time = datetime.now().strftime("%H:%M")
+            current_date = datetime.now().strftime("%d/%m/%Y")
+            numOffixturesInserted = 0
             
+            print(current_date)
             for row in values:
                 
                 if any(cell is None for cell in row) or len(row) < 7:
@@ -72,10 +76,11 @@ class FixturesView(APIView):
                 
                 match_time = datetime.strptime(match_time_str, '%H:%M')
                 
-                if match_time > datetime.strptime(current_time, '%H:%M'):
-                    print("Match not started yet"+match_time_str)
+                if current_date == match_date and match_time > datetime.strptime(current_time, '%H:%M'):
+                    print("Today's match - before")
+                    numOffixturesInserted += 1
                 else:
-                    print("Match started"+match_time_str)
+                    print("Not today's match - before")
                     continue
                 
                 
@@ -89,12 +94,66 @@ class FixturesView(APIView):
                     'match_item': match_item
                 }
                 
-                fixtures_result.append(ind_fixtures)
+                fixtures_result_before.append(ind_fixtures)
                 
-            fixtures_result = sorted(fixtures_result, key=lambda x: (int(x['match_time'].split(':')[0]), int(x['match_time'].split(':')[1])))
+            if numOffixturesInserted == len(values):
+                print("All fixtures inserted")
+                
+                if len(fixtures_result_before) > 0:
+                    fixtures_result_before = sorted(fixtures_result_before, key=lambda x: (int(x['match_time'].split(':')[0]), int(x['match_time'].split(':')[1])))
+                
             
+                print(current_time)
+                return Response({"fixture_result": fixtures_result_before}, status=status.HTTP_200_OK)
+            
+            else:
+                for row in values:
+                    
+                    if any(cell is None for cell in row) or len(row) < 7:
+                        continue
+                    
+                    team_1 = str(row[0]).upper().strip()
+                    team_2 = str(row[1]).upper().strip()
+                    match_time_str = str(row[2]).upper().strip()
+                    match_date = str(row[3]).upper().strip()
+                    match_venue = str(row[4]).upper().strip()
+                    match_level = str(row[5]).upper().strip()
+                    match_item = str(row[6]).upper().strip()
+                    
+                    match_time = datetime.strptime(match_time_str, '%H:%M')
+                    
+                    if current_date == match_date and match_time < datetime.strptime(current_time, '%H:%M'):
+                        print("Today's match after")
+                        numOffixturesInserted += 1
+                    else:
+                        print("Not today's match after")
+                        continue
+                    
+                    
+                    ind_fixtures = {
+                        'team_1': team_1,
+                        'team_2': team_2,
+                        'match_time': match_time_str,
+                        'match_date': match_date,
+                        'match_venue': match_venue,
+                        'match_level': match_level,
+                        'match_item': match_item
+                    }
+                    
+                    fixtures_result_after.append(ind_fixtures)
+                    
+                if numOffixturesInserted == len(values):                
+                    print("All fixtures inserted after")
+                
+                    if len(fixtures_result_before) > 0:
+                        fixtures_result_after = sorted(fixtures_result_after, key=lambda x: (int(x['match_time'].split(':')[0]), int(x['match_time'].split(':')[1])))
+                    
+            fixtures_result = fixtures_result_before + fixtures_result_after  
             print(current_time)
             return Response({"fixture_result": fixtures_result}, status=status.HTTP_200_OK)
+                    
+            
+            
 
         except HttpError as err:
             print(err)

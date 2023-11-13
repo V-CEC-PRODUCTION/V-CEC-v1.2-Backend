@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-m1tzb)nx&22@lnwx2%v@+pgji&6aj%egiggjut*z^tua&8nxs_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -204,7 +204,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'Score-Board': {
         'task': 'live_update_board.tasks.RealTimeTask',
-        'schedule': 30 # this means, the task will run itself every second
+        'schedule': 80 # this means, the task will run itself every second
     },
 }
 

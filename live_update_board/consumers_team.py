@@ -96,7 +96,7 @@ class TeamRealTimeConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({
                     "item": message['item'],
                     "points": message['points'],
-                    "item_id": message['item_id'],   
+                    "id": message['item_id'],   
                 }))
             
         except Exception as e:
@@ -111,19 +111,18 @@ class TeamRealTimeConsumer(AsyncWebsocketConsumer):
             )
 
             messages = getattr(self, 'messages', [])
-            if messages:
-                await self.create_team_items(messages[0]['item'], messages[0]['points'])
+            
                 
     async def update_message(self, event):
         points = event['points']
         item = event['item']
-        item_id = event['item_id']
+        item_id = event['id']
         
 
         self.messages[item_id] = {
             "item": item,
             "points": points,
-            "item_id": item_id,
+            "id": item_id,
         }
         # Send the received message to the WebSocket
         await self.send(text_data=json.dumps(self.messages[item_id]))
@@ -138,7 +137,7 @@ class TeamRealTimeConsumer(AsyncWebsocketConsumer):
         self.messages.append({
             "item": item,
             "points": points,
-            "item_id": item_id,
+            "id": item_id,
         })
 
         await self.channel_layer.group_send(
@@ -146,7 +145,7 @@ class TeamRealTimeConsumer(AsyncWebsocketConsumer):
                 "type": "sendMessage",
                 "item": item,
                 "points": points,
-                "item_id": item_id,
+                "id": item_id,
             })
 
     async def sendMessage(self, event):
@@ -159,7 +158,7 @@ class TeamRealTimeConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             "item": item,
             "points": points,
-            "item_id": item_id,
+            "id": item_id,
         }))
         
         
