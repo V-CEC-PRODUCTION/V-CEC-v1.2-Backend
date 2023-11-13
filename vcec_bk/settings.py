@@ -190,21 +190,21 @@ CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'
 
 
 CELERY_BEAT_SCHEDULE = {
-    'ktu-notices-every-15-minutes': {
-        'task': 'notices.tasks.ktu_webs_announce_task',
-        'schedule': 900,  # 15 minutes in seconds
-    },
-    'forum-stories-every-1-minutes': {
-        'task': 'forum_stories.tasks.checkIfStoriesExpired',
-        'schedule': 60,  # 1 minutes in seconds
-    },
-    'student-time-table-every-1-minutes': {
-        'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': 30,  # 1 minutes in seconds
-    },
+    # 'ktu-notices-every-15-minutes': {
+    #     'task': 'notices.tasks.ktu_webs_announce_task',
+    #     'schedule': 900,  # 15 minutes in seconds
+    # },
+    # 'forum-stories-every-1-minutes': {
+    #     'task': 'forum_stories.tasks.checkIfStoriesExpired',
+    #     'schedule': 60,  # 1 minutes in seconds
+    # },
+    # 'student-time-table-every-1-minutes': {
+    #     'task': 'timetables.tasks.AutoTimeTableSystem',
+    #     'schedule': 30,  # 1 minutes in seconds
+    # },
     'Score-Board': {
         'task': 'live_update_board.tasks.RealTimeTask',
-        'schedule': 80 # this means, the task will run itself every second
+        'schedule': 40 # this means, the task will run itself every second
     },
 }
 

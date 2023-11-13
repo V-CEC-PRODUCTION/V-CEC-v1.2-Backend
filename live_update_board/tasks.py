@@ -113,6 +113,11 @@ def RealTimeTask():
                 else:
                     pass
                 
+                for team_item_instance_socket in team_item_all_score:
+                    team_item_update_socket = TeamRealTimeConsumer()
+                    
+                    team_item_update_socket.team_score_changed(instance=team_item_instance_socket)
+                
                 team_score_update = RealTimeConsumer()
                 
                 team_score_update.team_score_changed(instance=team_score_instance)
