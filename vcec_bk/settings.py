@@ -66,6 +66,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", 
     "https://localhost:5173",
     "https://localhost:4200",
+    "https://ashwa-scoreboard.vercel.app"
   ]
 
 CORS_ALLOW_ALL_ORIGINS = True
