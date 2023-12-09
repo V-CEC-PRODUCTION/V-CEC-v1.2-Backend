@@ -15,4 +15,5 @@ urlpatterns = [
     path('validate/access/token/', views.ValidateTokenView.as_view(), name='validate-token'),
     path('update/profile/image/<str:pk>', views.UpdateForumImage.as_view(), name='update-profile-image'),
     path('get/roles/', views.AllforumRoles.as_view(), name='get-all-roles'),
+    path('get/list/',views.GetForumList.as_view(),name='get-forum-list'),
 ]

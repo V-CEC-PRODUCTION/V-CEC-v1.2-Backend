@@ -104,6 +104,7 @@ def delete_file(request, pk):
     if image.tag == 'vid':
         try:
             video = VideoStore.objects.get(fid=pk)
+            print("video")
         except VideoStore.DoesNotExist:
             return Response({"error": "VideoStore not found."}, status=404)
         
@@ -112,8 +113,10 @@ def delete_file(request, pk):
         video.delete()
         
     if image.media_file:
+        print("media file deleted")
         image.media_file.delete()
     if image.thumbnail:
+        print("thumbnail deleted")
         image.thumbnail.delete()
     
     image.delete()
@@ -130,7 +133,7 @@ def delete_file(request, pk):
     cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
     
     
-    return Response({"message": "FileStore and thumbnail deleted successfully."}, status=204)
+    return Response({"message": "FileStore and thumbnail deleted successfully."}, status=status.HTTP_200_OK)
 
 
 
@@ -221,8 +224,10 @@ def post_file(request):
                 if video_item.is_valid():
                     video_instance = video_item.save()
                     
-            media_instance.save()
             video_instance.save()
+            if media_instance.tag == 'vid':
+                media_instance.video_url=video_instance.video_url
+            media_instance.save()
             
         gallery_files = 'gallery_files'
         
@@ -262,13 +267,13 @@ def get_all_files(request):
     
     gallery_files = 'gallery_files'
     
-    gallery_files_result = cache.get(gallery_files)
-    
+    # gallery_files_result = cache.get(gallery_files)
+    gallery_files_result = None    
     if gallery_files_result is None:
         
         print("Data from database")
         
-        images = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
+        images = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time','video_url')
         serializer = GalleryGetSerializer(images, many=True)
         
         gallery_files_result = serializer.data

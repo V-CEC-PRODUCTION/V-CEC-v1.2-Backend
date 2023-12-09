@@ -7,6 +7,7 @@ class FileStore(models.Model):
     thumbnail_url = models.TextField(blank=True)
     tag=models.TextField(default="img")
     upload_time = models.DateTimeField(auto_now_add=True)
+    video_url=models.TextField(blank=True)
 
 
     def save(self, *args, **kwargs):
@@ -14,6 +15,7 @@ class FileStore(models.Model):
             self.media_url = f"gallery/cec/api/media/{self.id}/file/"
         if self.thumbnail:
             self.thumbnail_url = f"gallery/cec/api/media/{self.id}/thumbnail/"
+        
 
         super().save(*args, **kwargs)
 

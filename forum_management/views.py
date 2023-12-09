@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from .models import AddForum, Token
 from .utils import TokenUtil
 from django.http import HttpResponse
-from .serializers import ForumSerializer, ForumGetSerializer, ForumDetailsSerializer, ForumImageSerializer
+from .serializers import ForumSerializer, ForumGetSerializer, ForumDetailsSerializer, ForumImageSerializer,ForumRoleNameGetSerializer,ForumListGetSerializer
 from PIL import Image as PilImage
 from io import BytesIO
 from users.models import User
@@ -122,12 +122,14 @@ class UpdateForumImage(APIView):
         
 class AllforumRoles(APIView):
     def get(self,request):
-        roles = UserCountStories.objects.values('count').distinct()
+        roles = AddForum.objects.values('forum_role_name').distinct()
+        
+
         
         # print(roles)
         
         # # Convert the QuerySet to a list of dictionaries
-        # roles_list = list(roles)
+        # roles_list = list (roles)
 
         # converted_data = {item['forum_role_name']: 0 for item in roles_list}
         
@@ -136,8 +138,13 @@ class AllforumRoles(APIView):
         # converted_json = json.dumps(converted_data)
         
         # print(converted_json)
-        #serializer = ForumDetailsSerializer(roles, many=True)
-        return Response(roles[0]['count'])
+
+        # json_data = json.loads(converted_json)
+
+        # print(json_data)
+
+        serializer = ForumRoleNameGetSerializer(roles, many=True)
+        return Response({"ForumRoleNames":serializer.data}, status=status.HTTP_200_OK)
     
 class DeleteForum(APIView):
     def delete(self, request, pk):
@@ -289,8 +296,9 @@ class ValidateTokenView(APIView):
 class LoginUserGoogle(APIView):
     def post(self,request):
         try:
-            user=AddForum.objects.get(email_id=request.data['email'])
+            user=AddForum.objects.filter(email_id=request.data['email']).first()
             
+            print(user)
             if user is not None:
                 
                 access_token, refresh_token = TokenUtil.generate_tokens(user)
@@ -300,7 +308,7 @@ class LoginUserGoogle(APIView):
                     user.logged_in = True
                     user.save()
 
-                    return Response({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
+                    return Response({'access_token': access_token, 'refresh_token': refresh_token,'forum_role': user.forum_role_name}, status=status.HTTP_200_OK)
                 else:
                     return Response({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED) 
 
@@ -405,3 +413,10 @@ class LogoutUser(APIView):
         
         except ObjectDoesNotExist:
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
+
+class GetForumList(APIView):
+    def get(self,request):
+        forums=AddForum.objects.all()
+        serializer=ForumListGetSerializer(forums,many=True)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+

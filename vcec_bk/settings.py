@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'forum_management',
     'forum_stories',
     'fixtures_ashwa',
-    'live_update_board',
+    
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -66,10 +66,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", 
     "https://localhost:5173",
     "https://localhost:4200",
-    "https://ashwa-scoreboard.vercel.app"
   ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_CREDENTIALS=True
+
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -79,6 +81,12 @@ CORS_ALLOW_METHODS = (
     "POST",
     "PUT",
 )
+
+CORS_ALLOW_HEADERS=[
+    'access-control-allow-headers',
+    'access-control-allow-methods',
+    'content-type'
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

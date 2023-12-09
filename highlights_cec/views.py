@@ -61,7 +61,7 @@ def get_all_highlights(request):
     highlights_content = 'highlights_content'
     
     highlights_content_result = cache.get(highlights_content)
-    
+    # highlights_content_result = None
     if highlights_content_result is None:
         
         print("Data from database")
@@ -152,7 +152,7 @@ def delete_highlight(request, pk):
         
     highlights_content_result = images_list_result.data
     
-    cache.set(highlight_images, json.dumps(highlights_content_result),timeout=60*60*24*7)
+    # cache.set(highlight_images, json.dumps(highlights_content_result),timeout=60*60*24*7)
     
     return Response({"message": "Image and thumbnail deleted successfully."}, status=204)
 

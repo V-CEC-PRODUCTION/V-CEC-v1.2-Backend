@@ -3,15 +3,15 @@ import os
 
 class AddForum(models.Model):
     forum_name = models.CharField(max_length=100)
-    display_name = models.CharField(max_length=100, default='No display name')
+    display_name = models.CharField(max_length=100, default='No display name')#
     forum_description = models.TextField(default='No description')
     email_id = models.TextField()
-    forum_role_name = models.CharField(max_length=100)
+    forum_role_name = models.CharField(max_length=100)#
     forum_image = models.ImageField(upload_to='forum/management/images/')
     thumbnail_forum_image = models.ImageField(upload_to='forum/management/thumbnails/', blank=True, null=True)
     logged_in = models.BooleanField(default=False)
-    image_url = models.TextField(blank=True, null=True)
-    thumbnail_url = models.TextField(blank=True, null=True)
+    image_url = models.TextField(blank=True, null=True)#
+    thumbnail_url = models.TextField(blank=True, null=True)#
 
         
     def save(self, *args, **kwargs):

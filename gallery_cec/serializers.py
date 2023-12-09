@@ -19,7 +19,7 @@ class GalleryGetSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = FileStore
-        fields = ('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
+        fields = ('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time','video_url')
         
 class VideoGetSerializer(serializers.ModelSerializer):
     

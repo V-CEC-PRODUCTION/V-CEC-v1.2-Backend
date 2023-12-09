@@ -9,7 +9,7 @@ import json
 def ktu_announcements_scrap(request):
     try:
         ktu_result = "ktu_web_scrap"
-        web_scrap_result = cache.get(ktu_result)
+        web_scrap_result = None
         
         if web_scrap_result is None:
             print("Data from web")

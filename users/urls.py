@@ -7,7 +7,7 @@ urlpatterns = [
     path("get/<str:pk>", views.GetUserById.as_view(), name="get-user-by-id"),
     path("sign-up/email/", views.SignUpUser.as_view(), name="sign-up-email"),
     path("sign-up/google/", views.SignUpUserGoogle.as_view(), name="sign-up-google"),
-    path("update/<str:pk>", views.UpdateUser.as_view(), name="update-user"),
+    path("update/", views.UpdateUser.as_view(), name="update-user"),
     path("delete/<str:pk>", views.DeleteUser.as_view(), name="delete-user"),
     path("login/api/token/email/", views.LoginUser.as_view(), name="login-email"),
     path("login/api/token/google/", views.LoginUserGoogle.as_view(), name="login-email"),
@@ -19,4 +19,5 @@ urlpatterns = [
     path('get/user/role/', views.GetUserRole.as_view(), name='get-user-role'),
     path('validate/access/token/', views.ValidateTokenView.as_view(), name='validate-token'),
     path('check/email/exist/', views.CheckEmailExist.as_view(), name='check-email-exist'),
+    path('get/user/details/',views.GetUserDetails.as_view(),name='get-user-details'),
 ]

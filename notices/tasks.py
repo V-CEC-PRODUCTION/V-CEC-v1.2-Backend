@@ -14,7 +14,7 @@ def get_month_number(month_name):
         return None
     
 def ktu_webs_announce():
-    url = "https://ktu.edu.in/eu/core/announcements.htm"
+    url = "https://ktu.edu.in/Menu/announcements"
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "html.parser")
 

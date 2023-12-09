@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
 from django.http import HttpResponse 
 from PIL import Image as PilImage
 from io import BytesIO
@@ -53,12 +54,16 @@ def get_events(request):
             forms = forumEvents.objects.filter(status='Ended').order_by('-publish_date')
         else:
             return Response({"status": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        if request.query_params.get('forum'):
+            forms = forms.filter(published_by__contains=request.query_params.get('forum'))
+            print(forms)
+            
         
         serializer = FormGetSerializer(forms, many=True)
 
        
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"upcomingevents":serializer.data}, status=status.HTTP_200_OK)
     except forumEvents.DoesNotExist:
         return Response({"status": "Forms not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -174,6 +179,16 @@ def thumbnail_file(request, pk):
 
     return Response(status=status.HTTP_404_NOT_FOUND)
 
+class EventStatus(APIView):
+    def post(self,request,id):
+        event=forumEvents.objects.get(id=id)
+
+        if event.status=='Upcoming':
+            event.status='Ended'
+        else:
+            event.status='Upcoming'
+        event.save()
+        return Response({"message":"status updated successfully"},status=status.HTTP_200_OK)
 
 
 

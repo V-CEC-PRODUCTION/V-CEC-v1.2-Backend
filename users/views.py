@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from forum_stories.models import UserCountStories
 from forum_management.models import AddForum
 from .models import User, Token
-from .serializers import UserSerializer, EmailSerializer, OtpSerializer, UserGoogleSerializer
+from .serializers import UserSerializer, EmailSerializer, OtpSerializer, UserGoogleSerializer,GetUserDetailsSerializer,UserSerializerToken
 import random
 from datetime import datetime, timedelta
 from celery import shared_task
@@ -154,12 +154,49 @@ class SignUpUser(APIView):
 
 # update user
 class UpdateUser(APIView):
-    def update(request, pk):
-        user = User.objects.get(id=pk)
-        serializer = UserSerializer(instance=user, data=request.data)
+    def put(self,request):
+        authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+        if not authorization_header:
+            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
         
-        if serializer.is_valid():
-            serializer.save()
+        _, access_token = authorization_header.split()
+        
+        token_key = Token.objects.filter(access_token=access_token).first()
+        
+        if not token_key:
+            return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Validate the refresh token
+        access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+        
+        if not access_token_payload:
+            return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Check if the refresh token is associated with a user (add your logic here)
+        user_id = access_token_payload.get('id')
+        
+        if not user_id:
+            return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user = User.objects.get(id=user_id)
+        if request.data.get('name'):
+            user.name = request.data.get('name')
+        if request.data.get('email'):
+            user.email = request.data.get('email')
+        if request.data.get('admission_no'):
+            user.admission_no = request.data.get('admission_no')
+        if request.data.get('register_no'):
+            user.register_no = request.data.get('register_no') 
+        if request.data.get('image_url'):
+            user.image_url = request.data.get('image_url')
+        if request.data.get('ieee_membership_no'):
+            user.ieee_membership_no = request.data.get('ieee_membership_no')
+        user.save() 
+        print(user.admission_no, request.data.get('admission_no'))
+        serializer = UserSerializer(instance=user)
+        
+        
             
         return Response(serializer.data)
 
@@ -404,20 +441,26 @@ class LoginUserGoogle(APIView):
 class LoginUser(APIView):
     def post(self,request):
         try:
+            print(request.data['email'])
             user = User.objects.get(email=request.data['email'], login_type='email')
-            
+            print(user)
             
             if user is not None:
                 
                 if user.logged_in:
-                    user_token = Token.objects.get(user_id=user.id)
-                    
+                    try:
+                        user_token = Token.objects.get(user_id=user.id)
+                    except ObjectDoesNotExist:
+                        return Response("User token does not exist!", status=status.HTTP_404_NOT_FOUND)
                     user_token.delete()
+                    print("User logged in and starting to blacklist token")
                     
+
                 if check_password(request.data['password'], user.password):
                     # Generate refresh and access tokens
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
                     
+                    print(access_token, refresh_token)
                     # Validate tokens
                     if TokenUtil.validate_tokens(access_token, refresh_token):
                         user.logged_in = True
@@ -556,3 +599,39 @@ class LogoutUser(APIView):
         
         except ObjectDoesNotExist:
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
+
+
+class GetUserDetails(APIView):
+    def get(self, request):
+        authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+        if not authorization_header:
+            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        _, access_token = authorization_header.split()
+        
+        token_key = Token.objects.filter(access_token=access_token).first()
+        
+        if not token_key:
+            return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Validate the refresh token
+        access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+        
+        if not access_token_payload:
+            return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Check if the refresh token is associated with a user (add your logic here)
+        user_id = access_token_payload.get('id')
+        
+        if not user_id:
+            return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Generate a new access token
+        user = User.objects.get(id=user_id)
+        user.image_url="https://picsum.photos/200"
+        serializer = GetUserDetailsSerializer(user)
+
+            
+
+        return Response(serializer.data)
