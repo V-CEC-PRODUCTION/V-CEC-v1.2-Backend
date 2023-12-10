@@ -8,5 +8,6 @@ urlpatterns =[
     path('update-announcement/<int:id>/',update_announcement,name='update-form'),
     path('delete-announcement/<int:pk>/',delete_announcement,name="delete-event"),
     path('get-announcement/',get_announcements,name='get-announcements'),
-    path('test-current/',Currenttime,name='current-time')
+    path('test-current/',Currenttime,name='current-time'),
+    path('get-announcement/<int:id>/',GetAnnoucement.as_view(),name='get-announcement-by-id'),
 ]

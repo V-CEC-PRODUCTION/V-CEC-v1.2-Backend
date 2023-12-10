@@ -9,4 +9,5 @@ urlpatterns = [
     path('cec/api/events/<int:pk>/file/',image_file,name='forum_events'),
     path('cec/api/events/<int:pk>/thumbnail/',thumbnail_file,name='forum_events'),
     path('status/<int:id>/',EventStatus.as_view(),name='forum_events'),
+    path('get-event/<int:id>/',GetEventById.as_view(),name='get-event-by-id'),
 ]

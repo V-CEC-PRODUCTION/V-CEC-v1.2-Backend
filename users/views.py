@@ -192,6 +192,13 @@ class UpdateUser(APIView):
             user.image_url = request.data.get('image_url')
         if request.data.get('ieee_membership_no'):
             user.ieee_membership_no = request.data.get('ieee_membership_no')
+        if request.data.get('branch'):
+            user.branch = request.data.get('branch')
+        if request.data.get('semester'):
+            user.semester = request.data.get('semester')
+        if request.data.get('division'):
+            user.division = request.data.get('division')
+
         user.save() 
         print(user.admission_no, request.data.get('admission_no'))
         serializer = UserSerializer(instance=user)

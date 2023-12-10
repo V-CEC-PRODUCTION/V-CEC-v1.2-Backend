@@ -63,7 +63,7 @@ def get_events(request):
         serializer = FormGetSerializer(forms, many=True)
 
        
-        return Response({"upcomingevents":serializer.data}, status=status.HTTP_200_OK)
+        return Response({"events":serializer.data}, status=status.HTTP_200_OK)
     except forumEvents.DoesNotExist:
         return Response({"status": "Forms not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -190,7 +190,14 @@ class EventStatus(APIView):
         event.save()
         return Response({"message":"status updated successfully"},status=status.HTTP_200_OK)
 
-
+class GetEventById(APIView):
+    def get(self,request,id):
+        try:
+            event=forumEvents.objects.get(id=id)
+            serializer=FormGetSerializer(event)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except forumEvents.DoesNotExist:
+            return Response({"status": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
 
 def extract_unique_meaningful_words(text):
    

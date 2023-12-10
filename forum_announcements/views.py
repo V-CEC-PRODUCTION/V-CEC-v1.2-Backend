@@ -1,6 +1,7 @@
 import time,random ,string
 from django.shortcuts import render
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse 
 from .serializers import FormGetSerializer, FormSerializer
@@ -142,7 +143,7 @@ def get_announcements(request):
         announcements = forumAnnouncements.objects.all().order_by('-publish_date')
         serializer = FormGetSerializer(announcements, many=True)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"annoucements":serializer.data}, status=status.HTTP_200_OK)
     except forumAnnouncements.DoesNotExist:
         return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
     
@@ -153,3 +154,15 @@ def Currenttime(request):
     dt = datetime.now()
     dayOfTheWeek = dt.isoweekday()
     print(dayOfTheWeek)
+
+class GetAnnoucement(APIView):
+    def get(self,request,id):
+        try:
+
+            announcement = forumAnnouncements.objects.get(id=id)
+            serializer = FormGetSerializer(announcement)
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except forumAnnouncements.DoesNotExist:
+            return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
+    
