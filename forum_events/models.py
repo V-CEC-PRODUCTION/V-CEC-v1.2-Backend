@@ -10,11 +10,12 @@ class forumEvents(models.Model):
     thumbnail_poster_image = models.ImageField(upload_to='forum/events/thumbnails/', blank=True, null=True) 
     thumbnail_poster_image_url=models.TextField(blank=True,null=True) 
     register_button_link = models.TextField(default='vcec_form',blank=True,null=True)
-    whatsapp_link = models.TextField(blank=True,null=True)
+    whatsapp_link = models.TextField(default='')
     status = models.CharField(max_length=10,default='Upcoming')
     publish_date = models.DateTimeField(auto_now_add=True)
     published_by = models.CharField(max_length=100)
     hashtags = models.TextField(blank=True,null=True)
+    event_date=models.CharField(max_length=15,default='')
 
         
     def save(self, *args, **kwargs):
