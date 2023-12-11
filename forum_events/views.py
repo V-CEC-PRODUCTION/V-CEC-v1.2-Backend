@@ -19,6 +19,15 @@ nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
 
+class EventForumView(APIView):
+    def get(self,request):
+        try:
+            events=forumEvents.objects.all().order_by('-publish_date')
+            serializer=FormGetSerializer(events,many=True)
+            return Response({"events":serializer.data},status=status.HTTP_200_OK)
+        except forumEvents.DoesNotExist:
+            return Response({"error":"Events not found"},status=status.HTTP_404_NOT_FOUND)
+        
 @api_view(['POST'])
 def create_event(request):
     serializer=FormSerializer(data=request.data)

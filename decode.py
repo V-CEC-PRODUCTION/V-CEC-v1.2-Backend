@@ -1,31 +1,8 @@
-# from pyfcm import FCMNotification
-
-# # Your FCM server key obtained from the Firebase Console
-# api_key = "AAAA0VFMIUc:APA91bFMe4mI8B9F96q1pmnSfd-bVcduAPUfmoWs6fPc345SeluUXPwkHw6PEncCAp8A9dUfhaZvUBI7AHWmkwsqOHlko35q3mW75xOxN5NqZVQl-g58dG-2GWPUjb2-4A6gf6TxDA0A"
-
-# # Initialize the FCM client
-# push_service = FCMNotification(api_key=api_key)
-
-# # The device token obtained from the Flutter app
-# device_token = "UE1A.230829.030"
-
-# # The notification message
-# message_title = "Your Notification Title"
-# message_body = "Your Notification Body"
-
-# # Send the notification
-# result = push_service.notify_single_device(
-#     registration_id=device_token,
-#     message_title=message_title,
-#     message_body=message_body
-# )
-
-# print(result)
 import requests
 import json
 
 def send_notification(registration_ids , message_title , message_desc):
-    fcm_api = "AAAA0VFMIUc:APA91bFMe4mI8B9F96q1pmnSfd-bVcduAPUfmoWs6fPc345SeluUXPwkHw6PEncCAp8A9dUfhaZvUBI7AHWmkwsqOHlko35q3mW75xOxN5NqZVQl-g58dG-2GWPUjb2-4A6gf6TxDA0A"
+    fcm_api = "AAAAqbxPQ_Q:APA91bGWil8YXU8Zr1CLa-tqObZ-DVJUqq0CrN0O76bltTApN51we3kOqrA4rRFZUXauBDtkcR3nWCQ60UPWuroRZpJxuCBhgD6CdHAnjqh8V2zPIzLvuvERmbipMHIoJJxuBegJW3a3"
     url = "https://fcm.googleapis.com/fcm/send"
     
     headers = {
@@ -45,7 +22,7 @@ def send_notification(registration_ids , message_title , message_desc):
     print(result.json())
 
 def send():
-    registration  = ['ebrlDETpQNyVusBXcDIJg1:APA91bHymIhvg-3xnXTWQWFvzTPm_7-Qc0gQjkZZUzGWqq_ua6Qsb-Rs65Ja6k2J0E_IwkhxfryW4AA2vUcQpH8j2r7vFJFbGdr0SAbO-oyAzaB1kSMAvarAJvk3rYc7-dVU7nl9hfqj']
+    registration  = ['eF5_gLolTPeWKeIERkJCpo:APA91bFHa8h6e5Li89FGT0SICYv5gHumjSUouCpT1G56epiPbBuuPm9KquFuNfyDHQAbgPAeCJMeD815jFbKFNuwP9Kt5U5gfcFYFds7xIVQM8qSxptDZNKioVf0dez3aWGhpUHClHMI']
     send_notification(registration , 'Hello alvin ikka' , 'I love you so much')
     print('sent')
 
