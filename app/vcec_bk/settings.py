@@ -104,8 +104,8 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'channels.middleware.WebSocketMiddleware',
-    #'django.middleware.csrf.CsrfViewMiddleware',
+    # 'channels.middleware.WebSocketMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -270,7 +270,7 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Asia/Kolkata'
 
-#USE_I18N = True
+USE_I18N = True
 
 USE_TZ = False
 
