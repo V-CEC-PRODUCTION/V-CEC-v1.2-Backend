@@ -11,8 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import os 
-from datetime import timedelta
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -60,18 +60,18 @@ INSTALLED_APPS = [
     'forum_management',
     'forum_stories',
     'fixtures_ashwa',
-    
+
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://localhost:4200", 
+    "http://localhost:4200",
     "https://localhost:3000",
-    "http://localhost:5173", 
+    "http://localhost:5173",
     "https://localhost:5173",
     "https://localhost:4200",
     "https://3e99-103-160-194-189.ngrok-free.app",
-  ]
+]
 
 
 CORS_ALLOW_METHODS = (
@@ -157,15 +157,15 @@ DATABASES = {
         "HOST": os.environ.get("SQL_HOST", "localhost"),
         "PORT": os.environ.get("SQL_PORT", "5432"),
     },
-      
-  	'channels_postgres': {
+
+    'channels_postgres': {
         "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
         "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
         "USER": os.environ.get("SQL_USER", "user"),
         "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
         "HOST": os.environ.get("SQL_HOST", "localhost"),
         "PORT": os.environ.get("SQL_PORT", "5432"),
-	}
+    }
 }
 
 CHANNEL_LAYERS = {
@@ -186,12 +186,13 @@ CHANNEL_LAYERS = {
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': f'rediss://{os.environ.get("REDIS_LOCATION")}:{os.environ.get("REDIS_PORT")}',  # Replace with your Redis server address and database number
+        # Replace with your Redis server address and database number
+        'LOCATION': f'rediss://{os.environ.get("REDIS_LOCATION")}:{os.environ.get("REDIS_PORT")}',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'PASSWORD': os.environ.get("REDIS_PASSWORD"),
-            'SSL' :True,
-        
+            'SSL': True,
+
         }
     }
 }
@@ -202,31 +203,33 @@ SESSION_CACHE_ALIAS = "default"
 ASGI_APPLICATION = "vcec_bk.routing.application"
 
 # Celery settings
-CELERY_BROKER_URL = f'rediss://:{os.environ.get("REDIS_PASSWORD")}@{os.environ.get("REDIS_LOCATION")}:{os.environ.get("REDIS_PORT")}'+ '?ssl_cert_reqs=none'
-CELERY_RESULT_BACKEND = f'rediss://:{os.environ.get("REDIS_PASSWORD")}@{os.environ.get("REDIS_LOCATION")}:{os.environ.get("REDIS_PORT")}'+ '?ssl_cert_reqs=none'
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
+CELERY_BROKER_URL = f'rediss://:{os.environ.get("REDIS_PASSWORD")}@{os.environ.get("REDIS_LOCATION")}:{os.environ.get("REDIS_PORT")}' + \
+    '?ssl_cert_reqs=none'
+CELERY_RESULT_BACKEND = f'rediss://:{os.environ.get("REDIS_PASSWORD")}@{os.environ.get("REDIS_LOCATION")}:{os.environ.get("REDIS_PORT")}' + \
+    '?ssl_cert_reqs=none'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'  
+CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'
 
 
-CELERY_BEAT_SCHEDULE = {
-    # 'ktu-notices-every-15-minutes': {
-    #     'task': 'notices.tasks.ktu_webs_announce_task',
-    #     'schedule': 900,  # 15 minutes in seconds
-    # },
-    # 'forum-stories-every-1-minutes': {
-    #     'task': 'forum_stories.tasks.checkIfStoriesExpired',
-    #     'schedule': 60,  # 1 minutes in seconds
-    # },
-    # 'student-time-table-every-1-minutes': {
-    #     'task': 'timetables.tasks.AutoTimeTableSystem',
-    #     'schedule': 30,  # 1 minutes in seconds
-    # },
-    # 'Score-Board': {
-    #     'task': 'live_update_board.tasks.RealTimeTask',
-    #     'schedule': 40 # this means, the task will run itself every second
-    # },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     'ktu-notices-every-15-minutes': {
+#         'task': 'notices.tasks.ktu_webs_announce_task',
+#         'schedule': 900,  # 15 minutes in seconds
+#     },
+#     'forum-stories-every-1-minutes': {
+#         'task': 'forum_stories.tasks.checkIfStoriesExpired',
+#         'schedule': 60,  # 1 minutes in seconds
+#     },
+#     'student-time-table-every-1-minutes': {
+#         'task': 'timetables.tasks.AutoTimeTableSystem',
+#         'schedule': 30,  # 1 minutes in seconds
+#     },
+#     'Score-Board': {
+#         'task': 'live_update_board.tasks.RealTimeTask',
+#         'schedule': 40 # this means, the task will run itself every second
+#     },
+# }
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -237,8 +240,8 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 
 
-ACCESS_TOKEN_EXPIRATION = 20 # Adjust as needed
-REFRESH_TOKEN_EXPIRATION = 483840 # Adjust as needed
+ACCESS_TOKEN_EXPIRATION = 20  # Adjust as needed
+REFRESH_TOKEN_EXPIRATION = 483840  # Adjust as needed
 
 
 MEDIA_URL = '/media/'
