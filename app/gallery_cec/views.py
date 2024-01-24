@@ -1,4 +1,5 @@
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse, FileResponse
@@ -10,6 +11,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from celery import shared_task
 from django.core.cache import cache
 import time, random, json,string, os, cv2, numpy as np
+from vcec_bk.pagination import CustomPageNumberPagination
 
 @shared_task
 def calculate_frame_score(frame):
@@ -114,6 +116,7 @@ def delete_file(request, pk):
     if image.media_file:
         print("media file deleted")
         image.media_file.delete()
+        
     if image.thumbnail:
         print("thumbnail deleted")
         image.thumbnail.delete()
@@ -121,16 +124,9 @@ def delete_file(request, pk):
     image.delete()
     
     
-    gallery_files = 'gallery_files'
+    gallery_files = 'gallery_files*'
         
-    files_list = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
-    
-    files_result = GalleryGetSerializer(files_list, many=True)
-    
-    gallery_files_result = files_result.data
-    
-    cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
-    
+    cache.delete_pattern(gallery_files)
     
     return Response({"message": "FileStore and thumbnail deleted successfully."}, status=status.HTTP_200_OK)
 
@@ -228,17 +224,10 @@ def post_file(request):
                 media_instance.video_url=video_instance.video_url
             media_instance.save()
             
-        gallery_files = 'gallery_files'
+        gallery_files = 'gallery_files*'
         
+        cache.delete_pattern(gallery_files)
         
-        files_list = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time')
-        
-        files_result = GalleryGetSerializer(files_list, many=True)
-        
-        gallery_files_result = files_result.data
-        
-        cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
-            
         return Response(media_item.data, status=201)
     return Response(media_item.errors, status=400)
 
@@ -261,34 +250,46 @@ def stream_video(request, pk):
     
     return response
 
-@api_view(['GET'])
-def get_all_files(request):
-    
-    gallery_files = 'gallery_files'
-    
-    # gallery_files_result = cache.get(gallery_files)
-    gallery_files_result = None    
-    if gallery_files_result is None:
+
+class get_all_files(APIView, CustomPageNumberPagination):
+    def get(self,request):
+        page_number = request.GET.get('page')
+        page_count = request.GET.get('count')
+            
+        if page_number is None:
+            page_number = 1
+            
+        if page_count is None:
+            page_count = 1
+                
+        gallery_files = f'gallery_files_{page_number}_{page_count}'
         
-        print("Data from database")
+        gallery_files_result = cache.get(gallery_files)
+        # gallery_files_result = None    
+        if gallery_files_result is None:
+            
+            print("Data from database")
+            
+            images = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time','video_url').order_by('-id')
+            
+            result_images = self.paginate_queryset(images, request)
+            
+            serializer = GalleryGetSerializer(result_images, many=True)
+            
+            gallery_files_result = serializer.data
+            
+            cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
+            
+        else:
+            print("Data from cache")
+            gallery_files_result = json.loads(gallery_files_result)
+            
         
-        images = FileStore.objects.values('id', 'media_url', 'thumbnail_url', 'tag', 'upload_time','video_url')
-        serializer = GalleryGetSerializer(images, many=True)
+        response = {
+            "gallery_files": gallery_files_result,
+        }
         
-        gallery_files_result = serializer.data
-        
-        cache.set(gallery_files, json.dumps(gallery_files_result),timeout=60*60*24*7)
-        
-    else:
-        print("Data from cache")
-        gallery_files_result = json.loads(gallery_files_result)
-        
-    
-    response = {
-        "gallery_files": gallery_files_result,
-    }
-    
-    return Response(response)
+        return Response(response)
 
 
 @api_view(['GET'])

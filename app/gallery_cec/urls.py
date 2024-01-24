@@ -2,7 +2,7 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-    path('images/', get_all_files, name='file-list'),
+    path('images/', get_all_files.as_view(), name='file-list'),
     path('files/<int:pk>/', get_file_detail, name='file-detail'),
     path('files/create/', post_file, name='file-create'),
     path('files/delete/<int:pk>', delete_file, name='file-delete'),

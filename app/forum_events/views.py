@@ -10,10 +10,12 @@ from .serializers import FormSerializer,FormGetSerializer
 import time,random ,string
 from .models import create_tables,forumEvents,create_dynamic_models
 from django.db import connection
-import nltk
+from django.core.cache import cache
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
+from vcec_bk.pagination import CustomPageNumberPagination
+import json
 
 class EventForumView(APIView):
     def get(self,request):
@@ -46,31 +48,55 @@ def create_event(request):
         thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
         serializer_instance.thumbnail_poster_image.save(unique_filename, thumbnail, save=True)
         create_tables("forum_events",serializer_instance.id)
+        
+        event_cache_name = "forum_events*"
+        
+        cache.delete_pattern(event_cache_name)
+        
         return Response(serializer.data,status.HTTP_200_OK)
     else:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
-def get_events(request):
-    try:
-        if request.query_params.get('status') == 'Upcoming':
-            forms = forumEvents.objects.filter(status='Upcoming').order_by('-publish_date')
-        elif request.query_params.get('status') == 'Ended':
-            forms = forumEvents.objects.filter(status='Ended').order_by('-publish_date')
-        else:
-            return Response({"status": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if request.query_params.get('forum'):
-            forms = forms.filter(published_by__contains=request.query_params.get('forum'))
-            print(forms)
-            
-        
-        serializer = FormGetSerializer(forms, many=True)
 
-       
-        return Response({"events":serializer.data}, status=status.HTTP_200_OK)
-    except forumEvents.DoesNotExist:
-        return Response({"status": "Forms not found"}, status=status.HTTP_404_NOT_FOUND)
+class get_events(APIView,CustomPageNumberPagination):
+    def get(self,request):
+        try:
+            page_number = request.GET.get('page')
+            page_count = request.GET.get('count')
+                
+            if page_number is None:
+                page_number = 1
+                
+            if page_count is None:
+                page_count = 1
+                
+            status_event = request.query_params.get('status')
+               
+            event_result_name = f"forum_events_{page_number}_{page_count}_{status_event}"
+            event_cache_result = cache.get(event_result_name)
+            
+            if event_cache_result is None:
+            
+                if status_event == 'Upcoming' or status_event == 'Ended':
+                    events = forumEvents.objects.filter(status=status_event).order_by('-publish_date')
+                else:
+                    return Response({"status": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if request.query_params.get('forum'):
+                    events = events.filter(published_by__contains=request.query_params.get('forum'))
+                    
+                events_result = self.paginate_queryset(events, request)
+                serializer = FormGetSerializer(events_result, many=True)
+                
+                cache.set(event_result_name, json.dumps(serializer.data),timeout=60*60*24*7)
+                
+                return Response({"events":serializer.data}, status=status.HTTP_200_OK)
+            else:
+                print("Data from cache")
+                event_cache_result = json.loads(event_cache_result)
+                return Response({"events":event_cache_result}, status=status.HTTP_200_OK)
+        except forumEvents.DoesNotExist:
+            return Response({"status": "Forms not found"}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['DELETE'])
 def delete_event(request,pk):
@@ -106,6 +132,11 @@ def delete_event(request,pk):
         cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
 
     connection.close()
+    
+    event_cache_name = "forum_events*"
+        
+    cache.delete_pattern(event_cache_name)
+        
     return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
             
                 
@@ -160,6 +191,11 @@ def update_event(request,id):
                 
         cur.close()
         connection.close()
+        
+        event_cache_name = "forum_events*"
+        
+        cache.delete_pattern(event_cache_name)
+        
         return Response({"message": "Record Updated successfully."},status=status.HTTP_200_OK)
 
     else:

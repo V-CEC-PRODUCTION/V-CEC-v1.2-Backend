@@ -1,4 +1,5 @@
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse
@@ -13,76 +14,84 @@ import json
 import time
 import random
 import string
+from vcec_bk.pagination import CustomPageNumberPagination
 
-@api_view(['POST'])
-def create_highlight(request):
-    serializer = ImageSerializer(data=request.data)
-    if serializer.is_valid():
-        dt = datetime.now()
-        upload_time = str(dt.date())
-        content = request.GET.get('content')
-        tag = request.GET.get('tag')
-        image_instance = serializer.save(content=content, upload_time=upload_time, tag=tag)
 
-        # Generate and save the thumbnail
-        if image_instance.image:
-            img = PilImage.open(image_instance.image.path)
-            img.thumbnail((100, 100))
-            thumb_io = BytesIO()
-            img.save(thumb_io, format='JPEG')
+class create_highlight(APIView):
+    def post(self,request):
+        try:
+            serializer = ImageSerializer(data=request.data)
+            if serializer.is_valid():
+                dt = datetime.now()
+                upload_time = str(dt.date())
+                content = request.GET.get('content')
+                tag = request.GET.get('tag')
+                image_instance = serializer.save(content=content, upload_time=upload_time, tag=tag)
 
-            # Generate a unique filename for the thumbnail
-            timestamp = int(time.time())
-            random_string = ''.join(random.choices(string.ascii_letters, k=6))
-            unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
+                # Generate and save the thumbnail
+                if image_instance.image:
+                    img = PilImage.open(image_instance.image.path)
+                    img.thumbnail((100, 100))
+                    thumb_io = BytesIO()
+                    img.save(thumb_io, format='JPEG')
 
-            thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
-            image_instance.thumbnail.save(unique_filename, thumbnail, save=True)
-            image_instance.save()
+                    # Generate a unique filename for the thumbnail
+                    timestamp = int(time.time())
+                    random_string = ''.join(random.choices(string.ascii_letters, k=6))
+                    unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
+
+                    thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
+                    image_instance.thumbnail.save(unique_filename, thumbnail, save=True)
+                    image_instance.save()
+                    
+                key_pattern = "highlight_images*"
+
+                cache.delete_pattern(key_pattern)
+                
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class get_all_highlights(APIView, CustomPageNumberPagination):
+    def get(self,request):
+        page_number = request.GET.get('page')
+        page_count = request.GET.get('count')
+        
+        if page_number is None:
+            page_number = 1
             
-        highlight_images = 'highlight_images'
+        if page_count is None:
+            page_count = 1
+            
+        highlights_content = f"highlight_images_{page_number}_{page_count}"
         
-        images_list = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
+        highlights_content_result = cache.get(highlights_content)
+        # highlights_content_result = None
+        if highlights_content_result is None:
+            
+            print("Data from database")
+            
+            images = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag').order_by('-id')
+            
+            results_images = self.paginate_queryset(images, request)
+            
+            serializer = ImageGetSerializer(results_images, many=True)
+            
+            highlights_content_result = serializer.data
+            
+            cache.set(highlights_content, json.dumps(highlights_content_result),timeout=60*60*24*7)
         
-        images_list_result = ImageGetSerializer(images_list, many=True)
+        else:
+            print("Data from cache")
+            highlights_content_result = json.loads(highlights_content_result)
+            
         
-        highlights_content_result = images_list_result.data
-        
-        cache.set(highlight_images, json.dumps(highlights_content_result),timeout=60*60*24*7)
-
-        return Response(serializer.data, status=201)
-    return Response(serializer.errors, status=400)
-
-
-
-@api_view(['GET'])
-def get_all_highlights(request):
-    
-    highlights_content = 'highlights_content'
-    
-    highlights_content_result = cache.get(highlights_content)
-    # highlights_content_result = None
-    if highlights_content_result is None:
-        
-        print("Data from database")
-        
-        images = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
-    
-        serializer = ImageGetSerializer(images, many=True)
-        
-        highlights_content_result = serializer.data
-        
-        cache.set(highlights_content, json.dumps(highlights_content_result),timeout=60*60*24*7)
-    
-    else:
-        print("Data from cache")
-        highlights_content_result = json.loads(highlights_content_result)
-        
-    
-    response = {
-        "highlight_info_images": highlights_content_result,
-    }
-    return Response(response)
+        response = {
+            "highlight_info_images": highlights_content_result,
+        }
+        return Response(response)
 
 
 @api_view(['GET'])
@@ -144,16 +153,10 @@ def delete_highlight(request, pk):
     
     image.delete()
     
-    highlight_images = 'highlight_images'
-    
-    images_list = Image.objects.values('id','content', 'image_url', 'thumbnail_url', 'upload_time', 'tag')
+    key_pattern = "highlight_images*"
 
-    images_list_result = ImageGetSerializer(images_list, many=True)
-        
-    highlights_content_result = images_list_result.data
+    cache.delete_pattern(key_pattern)
     
-    # cache.set(highlight_images, json.dumps(highlights_content_result),timeout=60*60*24*7)
-    
-    return Response({"message": "Image and thumbnail deleted successfully."}, status=204)
+    return Response({"message": "Image and thumbnail deleted successfully."}, status=status.HTTP_200_OK)
 
 

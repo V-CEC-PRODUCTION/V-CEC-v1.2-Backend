@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
-
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -168,6 +168,11 @@ DATABASES = {
     }
 }
 
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,
+}
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_postgres.core.PostgresChannelLayer',
@@ -212,24 +217,76 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BEAT_SCHEDULE_FILENAME = 'celerybeat-schedule'
 
 
-# CELERY_BEAT_SCHEDULE = {
-#     'ktu-notices-every-15-minutes': {
-#         'task': 'notices.tasks.ktu_webs_announce_task',
-#         'schedule': 900,  # 15 minutes in seconds
-#     },
-#     'forum-stories-every-1-minutes': {
-#         'task': 'forum_stories.tasks.checkIfStoriesExpired',
-#         'schedule': 60,  # 1 minutes in seconds
-#     },
-#     'student-time-table-every-1-minutes': {
-#         'task': 'timetables.tasks.AutoTimeTableSystem',
-#         'schedule': 30,  # 1 minutes in seconds
-#     },
-#     'Score-Board': {
-#         'task': 'live_update_board.tasks.RealTimeTask',
-#         'schedule': 40 # this means, the task will run itself every second
-#     },
-# }
+CELERY_BEAT_SCHEDULE = {
+    # 'ktu-notices-every-15-minutes': {
+    #     'task': 'notices.tasks.ktu_webs_announce_task',
+    #     'schedule': 900,  # 15 minutes in seconds
+    # },
+    'forum-stories-every-1-minutes': {
+        'task': 'forum_stories.tasks.checkIfStoriesExpired',
+        'schedule': 60,  
+    },
+    'student-time-table-cronjob-1': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=8, minute=30),  
+    },
+    'student-time-table-cronjob-2': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=9),  
+    },
+    'student-time-table-cronjob-3': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=9, minute=50),  
+    },
+    'student-time-table-cronjob-4': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=10),  
+    },
+    'student-time-table-cronjob-5': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=10, minute=40),  
+    },
+    'student-time-table-cronjob-6': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=10, minute=50),  
+    },
+    'student-time-table-cronjob-7': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=11),  
+    },
+    'student-time-table-cronjob-8': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=11, minute=40),  
+    },
+    'student-time-table-cronjob-9': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=12),  
+    },
+    'student-time-table-cronjob-10': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=12, minute=30),  
+    },
+    'student-time-table-cronjob-11': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=13),  
+    },
+    'student-time-table-cronjob-12': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=14),  
+    },
+    'student-time-table-cronjob-13': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=15),  
+    },
+    'student-time-table-cronjob-14': {
+        'task': 'timetables.tasks.AutoTimeTableSystem',
+        'schedule': crontab(hour=16),  
+    },
+    # 'Score-Board': {
+    #     'task': 'live_update_board.tasks.RealTimeTask',
+    #     'schedule': 40 # this means, the task will run itself every second
+    # },
+}
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

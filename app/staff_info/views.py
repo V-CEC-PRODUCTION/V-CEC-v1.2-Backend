@@ -1,3 +1,4 @@
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -6,13 +7,13 @@ from .serializers import StaffSerializer
 from django.core.exceptions import ObjectDoesNotExist  
 from django.core.cache import cache
 import json
+from vcec_bk.pagination import CustomPageNumberPagination
 
 
-@api_view(['GET'])
-def full_staff_search(request,search):
-    try:
-        if request.method == 'GET':
-            
+class full_staff_search(APIView,CustomPageNumberPagination):
+    def get(self,request,search):
+        try:
+
             #search = request.GET.get('search')
             print("Search term:", search)
             
@@ -23,51 +24,64 @@ def full_staff_search(request,search):
                 
                 queryset = queryset.filter(name__icontains=search)
                 print("After filtering, objects matching search:", queryset.count())
-            
-                serializer = StaffSerializer(queryset, many=True)
+                
+                results_search = self.paginate_queryset(queryset, request)
+                serializer = StaffSerializer(results_search, many=True)
                 
                 response = {
                     "staff_info": serializer.data
                 }
                 
                 return Response(response, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
-@api_view(['GET'])
-def search_staff_dep(request,dep):
-    try:
-        if request.method == 'GET':
-            
+
+class search_staff_dep(APIView,CustomPageNumberPagination):
+    def get(self,request,dep):
+        try:
+
             search = request.GET.get('search')
             
             staff_dir = staffInfo.objects.filter(department=dep)
             
             queryset = staff_dir.filter(name__icontains=search) 
             
-            serializer = StaffSerializer(queryset, many=True)
+            results_search = self.paginate_queryset(queryset, request)
+            
+            serializer = StaffSerializer(results_search, many=True)
             
             response = {
                 "staff_info": serializer.data
             }
             return Response(response, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-@api_view(['GET'])
-def staff_dep(request,dep):
-    try:
-        if request.method == 'GET':
+class staff_dep(APIView,CustomPageNumberPagination):
+    def get(self,request,dep):
+        try:   
+            page_number = request.GET.get('page')
+            page_count = request.GET.get('count')
             
-            dep_name = dep+"_staff"
+            if page_number is None:
+                page_number = 1
+            
+            if page_count is None:
+                page_count = 1
+                
+            dep_name = f"{dep}_{page_number}_{page_count}"
             
             dep_result = cache.get(dep_name)
             
             if dep_result is None:
                 print("Data from database")
                 staff_dir = staffInfo.objects.filter(department=dep)
-                serializer = StaffSerializer(staff_dir, many=True)
+                
+                results = self.paginate_queryset(staff_dir, request)
+            
+                serializer = StaffSerializer(results, many=True)
                 
                 dep_result = serializer.data
                 
@@ -82,21 +96,34 @@ def staff_dep(request,dep):
                 "staff_info": dep_result
             }
             return Response(response, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-  
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-@api_view(['GET', 'POST'])
-def staff_list(request):
-    if request.method == 'GET':
+    
+class staff_list(APIView,CustomPageNumberPagination):
+    def get(self,request):
         
-        dep_name = "all_staff"
+        page_number = request.GET.get('page')
+        page_count = request.GET.get('count')
+        
+        if page_number is None:
+            page_number = 1
+        
+        if page_count is None:
+            page_count = 1
+            
+        dep_name = f"all_staff_{page_number}_{page_count}"  
         dep_result = cache.get(dep_name)
+        
+        # dep_result = None
         
         if dep_result is None:
             print("Data from database")
             staff_dir = staffInfo.objects.all()
-            serializer = StaffSerializer(staff_dir, many=True)
+            
+            results = self.paginate_queryset(staff_dir, request)
+            
+            serializer = StaffSerializer(results, many=True)
             
             dep_result = serializer.data
             
@@ -110,21 +137,15 @@ def staff_list(request):
         }
         return Response(response)
     
-    elif request.method == 'POST':
+    def post(self,request):
         serializer = StaffSerializer(data=request.data)
         
         if serializer.is_valid():
             serializer.save()
-            
-            staff_dir = staffInfo.objects.all()
-            
-            staff_result= StaffSerializer(staff_dir, many=True)
-            
-            dep_result = staff_result.data
-            
-            for dep_name in ['CSE_staff','EEE_staff','ECE_staff','GE_staff','BSL_staff','LIB_staff','all_staff']:        
-                cache.set(dep_name, json.dumps(dep_result),timeout=60*60*24*7)
-            
+    
+            for dep_name in ['CSE*','EEE*','ECE*','GE*','BSL*','LIB*','all_staff*']:        
+                cache.delete_pattern(dep_name)
+                
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -146,14 +167,9 @@ def staff_detail(request, pk):
         if serializer.is_valid():
             serializer.save()
             
-            staff_dir = staffInfo.objects.all()
-            
-            staff_result= StaffSerializer(staff_dir, many=True)
-            
-            dep_result = staff_result.data
-            
-            for dep_name in ['CSE_staff','EEE_staff','ECE_staff','GE_staff','BSL_staff','LIB_staff','all_staff']:        
-                cache.set(dep_name, json.dumps(dep_result),timeout=60*60*24*7)
+            for dep_name in ['CSE*','EEE*','ECE*','GE*','BSL*','LIB*','all_staff*']:        
+                cache.delete_pattern(dep_name)
+                
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -166,15 +182,9 @@ def staff_delete(request,pk):
             
             info.delete()
             
-            staff_dir = staffInfo.objects.all()
-            
-            staff_result= StaffSerializer(staff_dir, many=True)
-            
-            dep_result = staff_result.data
-            
-            for dep_name in ['CSE_staff','EEE_staff','ECE_staff','GE_staff','BSL_staff','LIB_staff','all_staff']:        
-                cache.set(dep_name, json.dumps(dep_result),timeout=60*60*24*7)       
-                    
+            for dep_name in ['CSE*','EEE*','ECE*','GE*','BSL*','LIB*','all_staff*']:        
+                cache.delete_pattern(dep_name)
+                
             return Response({"message": "Staff info removed from the database"}, status=status.HTTP_204_NO_CONTENT)
         except ObjectDoesNotExist:
             return Response("Staff does not exist!", status=status.HTTP_404_NOT_FOUND)

@@ -1,4 +1,5 @@
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import HttpResponse
@@ -12,6 +13,7 @@ import time
 import random
 import string
 import json
+from vcec_bk.pagination import CustomPageNumberPagination
 
 @api_view(['POST'])
 def create_image(request):
@@ -19,7 +21,6 @@ def create_image(request):
     if serializer.is_valid():
         image_instance = serializer.save()
         
-        homepage_images = 'homepage_images'
         # Generate and save the thumbnail
         if image_instance.image:
             img = PilImage.open(image_instance.image.path)
@@ -35,46 +36,50 @@ def create_image(request):
             thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
             image_instance.thumbnail.save(unique_filename, thumbnail, save=True)
             
-            
-            images_list = Image.objects.values('id', 'image_url', 'thumbnail_url')
-        
-            images_list_result = ImageGetSerializer(images_list, many=True)
-            
-            home_img_result = images_list_result.data
-            
-            cache.set(homepage_images, json.dumps(home_img_result),timeout=60*60*24*7)
-           
+            homepage_images = 'homepage_images*'
+            cache.delete_pattern(homepage_images)
             
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
 
 
 
-@api_view(['GET'])
-def get_all_images(request):
-    
-    homepage_images = 'homepage_images'
-    
-    home_img_result = cache.get(homepage_images)
-    
-    if home_img_result is None:
-        print("Data from database")
-        images = Image.objects.values('id', 'image_url', 'thumbnail_url')
+class get_all_images(APIView,CustomPageNumberPagination):
+    def get(self,request):
         
-        serializer = ImageGetSerializer(images, many=True)
+        page_number = request.GET.get('page')
+        page_count = request.GET.get('count')
         
-        home_img_result = serializer.data
+        if page_number is None:
+            page_number = 1
+            
+        if page_count is None:
+            page_count = 1
+                 
+        homepage_images = f"homepage_images_{page_number}_{page_count}"
         
-        cache.set(homepage_images, json.dumps(home_img_result),timeout=60*60*24*7)
+        home_img_result = cache.get(homepage_images)
         
-    else:
-        print("Data from cache")
-        home_img_result = json.loads(home_img_result)
-    
-    response = {
-        "homepage_images": home_img_result,
-    }
-    return Response(response)
+        if home_img_result is None:
+            print("Data from database")
+            images = Image.objects.values('id', 'image_url', 'thumbnail_url').order_by('-id')
+            
+            results_images = self.paginate_queryset(images, request)
+            
+            serializer = ImageGetSerializer(results_images, many=True)
+            
+            home_img_result = serializer.data
+            
+            cache.set(homepage_images, json.dumps(home_img_result),timeout=60*60*24*7)
+            
+        else:
+            print("Data from cache")
+            home_img_result = json.loads(home_img_result)
+        
+        response = {
+            "homepage_images": home_img_result,
+        }
+        return Response(response)
 
 
 @api_view(['GET'])
@@ -137,13 +142,10 @@ def delete_image(request, pk):
     
     image.delete()
     
-    images_list = Image.objects.values('id', 'image_url', 'thumbnail_url')
+    homepage_images = 'homepage_images*'
+    cache.delete_pattern(homepage_images)
+    
 
-    images_list_result = ImageGetSerializer(images_list, many=True)
-    
-    home_img_result = images_list_result.data
-    
-    cache.set(homepage_images, json.dumps(home_img_result),timeout=60*60*24*7)
     return Response({"message": "Image and thumbnail deleted successfully."}, status=204)
 
 
