@@ -29,7 +29,11 @@ class full_staff_search(APIView,CustomPageNumberPagination):
                 serializer = StaffSerializer(results_search, many=True)
                 
                 response = {
-                    "staff_info": serializer.data
+                    "staff_info": serializer.data,
+                    "has_next": self.page.has_next(),
+                    "has_previous": self.page.has_previous(),
+                    "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                    "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
                 }
                 
                 return Response(response, status=status.HTTP_200_OK)
@@ -53,51 +57,67 @@ class search_staff_dep(APIView,CustomPageNumberPagination):
             serializer = StaffSerializer(results_search, many=True)
             
             response = {
-                "staff_info": serializer.data
+                "staff_info": serializer.data,
+                "has_next": self.page.has_next(),
+                "has_previous": self.page.has_previous(),
+                "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
             }
+                
             return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-class staff_dep(APIView,CustomPageNumberPagination):
-    def get(self,request,dep):
-        try:   
-            page_number = request.GET.get('page')
-            page_count = request.GET.get('count')
+# class staff_dep(APIView,CustomPageNumberPagination):
+#     def get(self,request,dep):
+#         try:   
+#             page_number = request.GET.get('page')
+#             page_count = request.GET.get('count')
             
-            if page_number is None:
-                page_number = 1
+#             if page_number is None:
+#                 page_number = 1
             
-            if page_count is None:
-                page_count = 1
+#             if page_count is None:
+#                 page_count = 1
                 
-            dep_name = f"{dep}_{page_number}_{page_count}"
+#             dep_name = f"{dep}_{page_number}_{page_count}"
             
-            dep_result = cache.get(dep_name)
+#             dep_result = cache.get(dep_name)
             
-            if dep_result is None:
-                print("Data from database")
-                staff_dir = staffInfo.objects.filter(department=dep)
+#             if dep_result is None:
+#                 print("Data from database")
+#                 staff_dir = staffInfo.objects.filter(department=dep)
                 
-                results = self.paginate_queryset(staff_dir, request)
+#                 results = self.paginate_queryset(staff_dir, request)
             
-                serializer = StaffSerializer(results, many=True)
+#                 serializer = StaffSerializer(results, many=True)
                 
-                dep_result = serializer.data
+#                 dep_result = {
+#                     'data': serializer.data,
+#                     'has_next': self.page.has_next(),
+#                     'has_previous': self.page.has_previous(),
+#                     'next_page_number': self.page.next_page_number() if self.page.has_next() else None,
+#                     'previous_page_number': self.page.previous_page_number() if self.page.has_previous() else None,
+#                 }
                 
-                cache.set(dep_name, json.dumps(dep_result),timeout=60*60*24*7)
+#                 cache.set(dep_name, json.dumps(dep_result),timeout=60*60*24*7)
                 
-            else:
-                print("Data from cache")
-                dep_result = json.loads(dep_result)
+#             else:
+#                 print("Data from cache")
+#                 dep_result = json.loads(dep_result)
                 
             
-            response = {
-                "staff_info": dep_result
-            }
-            return Response(response, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             response = {
+#                 "staff_info": dep_result['data'],
+#                 "has_next": dep_result['has_next'],
+#                 "has_previous": dep_result['has_previous'],
+#                 "next_page_number": dep_result['next_page_number'],
+#                 "previous_page_number": dep_result['previous_page_number'],
+#             }
+            
+#             return Response(response, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
 class staff_list(APIView,CustomPageNumberPagination):
@@ -116,16 +136,21 @@ class staff_list(APIView,CustomPageNumberPagination):
         dep_result = cache.get(dep_name)
         
         # dep_result = None
-        
+                    
         if dep_result is None:
             print("Data from database")
-            staff_dir = staffInfo.objects.all()
-            
-            results = self.paginate_queryset(staff_dir, request)
+                 
+            results = self.paginate_queryset(staffInfo.objects.all(), request)
             
             serializer = StaffSerializer(results, many=True)
             
-            dep_result = serializer.data
+            dep_result = {
+                'data': serializer.data,
+                'has_next': self.page.has_next(),
+                'has_previous': self.page.has_previous(),
+                'next_page_number': self.page.next_page_number() if self.page.has_next() else None,
+                'previous_page_number': self.page.previous_page_number() if self.page.has_previous() else None,
+            }
             
             cache.set(dep_name, json.dumps(dep_result),timeout=60*60*24*7)
         else:
@@ -133,10 +158,15 @@ class staff_list(APIView,CustomPageNumberPagination):
             dep_result = json.loads(dep_result)
         
         response = {
-            "staff_info": dep_result
+            "staff_info": dep_result['data'],
+            "has_next": dep_result['has_next'],
+            "has_previous": dep_result['has_previous'],
+            "next_page_number": dep_result['next_page_number'],
+            "previous_page_number": dep_result['previous_page_number'],
         }
+        
         return Response(response)
-    
+
     def post(self,request):
         serializer = StaffSerializer(data=request.data)
         

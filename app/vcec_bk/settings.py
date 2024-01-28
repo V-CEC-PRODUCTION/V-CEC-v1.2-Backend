@@ -29,9 +29,9 @@ DEBUG = bool(os.environ.get("DEBUG", default=0))
 allowed_hosts_env = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
 
 # Split the environment variable if it is not an empty string
-ALLOWED_HOSTS = allowed_hosts_env.split() if allowed_hosts_env else []
+# ALLOWED_HOSTS = allowed_hosts_env.split() if allowed_hosts_env else []
 
-# ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition

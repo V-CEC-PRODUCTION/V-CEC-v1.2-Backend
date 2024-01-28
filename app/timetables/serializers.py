@@ -17,7 +17,7 @@ class TimeTableClientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=TimeTable
-        fields=['firstcode','secondcode','thirdcode','fourthcode','fifthcode','sixthcode','firsttime','secondtime','thirdtime','fourthtime','fifthtime','sixthtime']
+        fields=['firstcode','secondcode','thirdcode','fourthcode','fifthcode','sixthcode','firsttime','secondtime','thirdtime','fourthtime','fifthtime','sixthtime','currentcode', 'currenttime']
 
 class TimeTableCurrentSerializer(serializers.ModelSerializer):
 

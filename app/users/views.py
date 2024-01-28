@@ -11,14 +11,15 @@ from django.template.loader import render_to_string
 from forum_stories.models import UserCountStories
 from forum_management.models import AddForum
 from .models import User, Token
-from .serializers import UserSerializer, EmailSerializer, OtpSerializer, UserGoogleSerializer,GetUserDetailsSerializer,UserSerializerToken
-import random
+from .serializers import UserSerializer,UserImageSerializer, EmailSerializer, OtpSerializer, UserGoogleSerializer,GetUserDetailsSerializer,UserSerializerToken
 from datetime import datetime, timedelta
 from celery import shared_task
 from .utils import TokenUtil
-import jwt, json
-
-
+from io import BytesIO
+from PIL import Image as PilImage
+from django.http import HttpResponse
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import random,time, string, os, jwt
 
 @api_view(['POST'])
 @shared_task
@@ -59,6 +60,40 @@ def send_otp(request):
     
     except Exception as e:
         return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ImageFile(APIView):
+    def get(self,request, pk):
+        try:
+            image_instance = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if image_instance.profile_image:
+            image_path = image_instance.profile_image.path
+            with open(image_path, "rb") as image_file:
+                response = HttpResponse(image_file.read(), content_type="image/jpeg")
+                response["Content-Disposition"] = f"inline; filename={image_instance.profile_image.name}"
+                return response
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+class ThumbnailFile(APIView):
+    def get(self,request, pk):
+        try:
+            image_instance = User.objects.get(id=pk)
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if image_instance.thumbnail_profile_image:
+            thumbnail_path = image_instance.thumbnail_profile_image.path
+            with open(thumbnail_path, "rb") as thumbnail_file:
+                response = HttpResponse(thumbnail_file.read(), content_type="image/jpeg")
+                response["Content-Disposition"] = f"inline; filename={image_instance.thumbnail_profile_image.name}"
+                return response
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
 
 class VerifyOtp(APIView):
     def post(self, request):
@@ -151,6 +186,77 @@ class SignUpUser(APIView):
         except IntegrityError as e:
             return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class UpdateProfilePhotoUser(APIView):
+    def put(self, request):
+        try:
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            _, access_token = authorization_header.split()
+            
+            token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Validate the refresh token
+            access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+            
+            if not access_token_payload:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = access_token_payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
+            
+            user = User.objects.get(id=user_id)
+            
+            # Check if there's an existing profile image
+            if user.profile_image:
+                # Delete existing profile image and thumbnail
+                delete_file(user.profile_image.path)
+                
+            if user.thumbnail_profile_image:
+                delete_file(user.thumbnail_profile_image.path)
+
+            
+            serializer = UserImageSerializer(instance=user,data=request.data)
+            
+            print(user.id)
+            # Generate and save the thumbnail
+            if serializer.is_valid():
+                image_instance = serializer.save()
+                
+                if image_instance.profile_image:
+                    img = PilImage.open(image_instance.profile_image.path)
+                    img.thumbnail((100, 100))
+                    thumb_io = BytesIO()
+                    img.save(thumb_io, format='JPEG')
+
+                    # Generate a unique filename for the thumbnail
+                    timestamp = int(time.time())
+                    random_string = ''.join(random.choices(string.ascii_letters, k=6))
+                    unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
+
+                    thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
+                    image_instance.thumbnail_profile_image.save(unique_filename, thumbnail, save=True)
+                    
+                    return Response({"result": "successfully updated profile image"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Profile photo is missing."}, status=status.HTTP_400_BAD_REQUEST)  
+        except Exception as e:
+            print(e)
+            return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def delete_file(file_path):
+    try:
+        os.remove(file_path)
+    except Exception as e:
+        print(f"Error deleting file: {e}")
 
 # update user
 class UpdateUser(APIView):
@@ -188,8 +294,6 @@ class UpdateUser(APIView):
             user.admission_no = request.data.get('admission_no')
         if request.data.get('register_no'):
             user.register_no = request.data.get('register_no') 
-        if request.data.get('image_url'):
-            user.image_url = request.data.get('image_url')
         if request.data.get('ieee_membership_no'):
             user.ieee_membership_no = request.data.get('ieee_membership_no')
         if request.data.get('branch'):
@@ -636,9 +740,8 @@ class GetUserDetails(APIView):
 
         # Generate a new access token
         user = User.objects.get(id=user_id)
-        user.image_url="https://picsum.photos/200"
+
         serializer = GetUserDetailsSerializer(user)
 
             
-
         return Response(serializer.data)

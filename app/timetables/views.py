@@ -72,14 +72,51 @@ def get_timetables(request):
 @api_view(['GET'])
 def get_clienttimetables(request):
     try:
-        timetable = TimeTable.objects.all()
+ 
+        authorization_header = request.META.get("HTTP_AUTHORIZATION")
+            
+        if not authorization_header:
+            return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+        _, token = authorization_header.split()
         
+        token_key = Token.objects.filter(access_token=token).first()
+        
+        if not token_key:
+            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+
+        payload = TokenUtil.decode_token(token_key.access_token)
+
+        # Optionally, you can extract user information or other claims from the payload
+        if not payload:
+            return Response({"error": "Invalid access token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Check if the refresh token is associated with a user (add your logic here)
+        user_id = payload.get('id')
+        
+        if not user_id:
+            return Response({'error': 'The access token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        user = User.objects.get(id=user_id) 
+        
+        dt = datetime.now()
+        
+        day = dt.weekday() - 1
+        
+
+        semester = str(user.semester)[1]
+                    
+        
+        timetable = TimeTable.objects.filter(semester=semester,division=user.division,day=day)
+
         serializer = TimeTableClientSerializer(timetable, many=True)
         for data in serializer.data:
             for field in ['firsttime', 'secondtime', 'thirdtime', 'fourthtime', 'fifthtime', 'sixthtime']:
                 data[field] = data[field].split("-")[0]
         
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"result":serializer.data}, status=status.HTTP_200_OK)
     except TimeTable.DoesNotExist:
         return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -120,13 +157,30 @@ class GetCurrentCode(APIView):
             
             dt = datetime.now()
             
-            day = dt.weekday() + 1
-            print(day)
-            timetable = TimeTable.objects.filter(semester=user.semester,division=user.division,day=day)
-
-            serializer = TimeTableCurrentSerializer(timetable, many=True)
+            day = dt.weekday()
             
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            currenttime = dt.time()
+            
+            print(currenttime)
+            
+            if day in [5,6]:
+                day = 1
+            else:
+                day = day + 1 
+
+            semester = str(user.semester)[1]    
+            
+            timetable = TimeTable.objects.filter(semester=semester,division=user.division,day=day)
+
+            serializer = TimeTableClientSerializer(timetable, many=True)
+            
+            for data in serializer.data:
+                for field in ['firsttime', 'secondtime', 'thirdtime', 'fourthtime', 'fifthtime', 'sixthtime']:
+                    data[field] = data[field].split("-")[0]
+                    data[field] = data[field].split(" ")[0]
+               
+            
+            return Response({"result": serializer.data,"thumbnail_url":user.thumbnail_url, "image_thumbnail_url": user.image_url}, status=status.HTTP_200_OK)
         except TimeTable.DoesNotExist:
             return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
             

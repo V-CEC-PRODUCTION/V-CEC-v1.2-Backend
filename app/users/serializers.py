@@ -22,9 +22,14 @@ class OtpSerializer(serializers.Serializer):
 class GetUserDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
-        fields=["name","email","branch","image_url","thumbnail_url","semester","division","admission_no","register_no","ieee_membership_no"]
+        fields=["id","name","email","branch","image_url","thumbnail_url","semester","division","admission_no","register_no","ieee_membership_no"]
     
 class UserSerializerToken(serializers.ModelSerializer):
     class Meta:
         model = Token
         fields = '__all__'
+        
+class UserImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id','profile_image','thumbnail_profile_image','image_url','thumbnail_url']
