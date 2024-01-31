@@ -66,6 +66,7 @@ class search_staff_dep(APIView,CustomPageNumberPagination):
                 
             return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
+            print(e)
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 # class staff_dep(APIView,CustomPageNumberPagination):
