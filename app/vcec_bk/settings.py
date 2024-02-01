@@ -211,63 +211,63 @@ CELERY_BEAT_SCHEDULE = {
     # },
     'forum-stories-every-1-minutes': {
         'task': 'forum_stories.tasks.checkIfStoriesExpired',
-        'schedule': 60,  
+        'schedule': 60,
     },
     'student-time-table-cronjob-1': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=8, minute=30),  
+        'schedule': crontab(hour=8, minute=30),
     },
     'student-time-table-cronjob-2': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=9),  
+        'schedule': crontab(hour=9),
     },
     'student-time-table-cronjob-3': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=9, minute=50),  
+        'schedule': crontab(hour=9, minute=50),
     },
     'student-time-table-cronjob-4': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=10),  
+        'schedule': crontab(hour=10),
     },
     'student-time-table-cronjob-5': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=10, minute=40),  
+        'schedule': crontab(hour=10, minute=40),
     },
     'student-time-table-cronjob-6': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=10, minute=50),  
+        'schedule': crontab(hour=10, minute=50),
     },
     'student-time-table-cronjob-7': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=11),  
+        'schedule': crontab(hour=11),
     },
     'student-time-table-cronjob-8': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=11, minute=40),  
+        'schedule': crontab(hour=11, minute=40),
     },
     'student-time-table-cronjob-9': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=12),  
+        'schedule': crontab(hour=12),
     },
     'student-time-table-cronjob-10': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=12, minute=30),  
+        'schedule': crontab(hour=12, minute=30),
     },
     'student-time-table-cronjob-11': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=13),  
+        'schedule': crontab(hour=13),
     },
     'student-time-table-cronjob-12': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=14),  
+        'schedule': crontab(hour=14),
     },
     'student-time-table-cronjob-13': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=15),  
+        'schedule': crontab(hour=15),
     },
     'student-time-table-cronjob-14': {
         'task': 'timetables.tasks.AutoTimeTableSystem',
-        'schedule': crontab(hour=16),  
+        'schedule': crontab(hour=16),
     },
     # 'Score-Board': {
     #     'task': 'live_update_board.tasks.RealTimeTask',
