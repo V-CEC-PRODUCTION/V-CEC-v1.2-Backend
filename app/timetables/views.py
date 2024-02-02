@@ -159,7 +159,7 @@ class GetCurrentCode(APIView):
             
             day = dt.weekday()
             
-            currenttime = dt.time()
+            currenttime = dt.time().hour
             
             print(currenttime)
             

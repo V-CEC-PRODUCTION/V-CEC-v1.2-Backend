@@ -61,30 +61,32 @@ def create_event(request):
 class get_events(APIView,CustomPageNumberPagination):
     def get(self,request):
         try:
-            page_number = request.GET.get('page')
-            page_count = request.GET.get('count')
+            page_number = request.query_params.get('page')
+            page_count = request.query_params.get('page_count')
+            forum = request.query_params.get('forum')
                 
             if page_number is None:
                 page_number = 1
                 
             if page_count is None:
-                page_count = 1
+                page_count = 100
                 
             status_event = request.query_params.get('status')
                
             event_result_name = f"forum_events_{page_number}_{page_count}_{status_event}"
-            event_cache_result = cache.get(event_result_name)
+            # event_cache_result = cache.get(event_result_name)
+            
+            event_cache_result = None
             
             if event_cache_result is None:
             
-                if status_event == 'Upcoming' or status_event == 'Ended':
+                if (status_event == 'Upcoming' or status_event == 'Ended') and forum == 'all':
                     events = forumEvents.objects.filter(status=status_event).order_by('-publish_date')
+                elif (status_event == 'Upcoming' or status_event == 'Ended') and forum != 'all':
+                    events = forumEvents.objects.filter(status=status_event, published_by__contains=forum).order_by('-publish_date')
                 else:
                     return Response({"status": "Invalid status value"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if request.query_params.get('forum'):
-                    events = events.filter(published_by__contains=request.query_params.get('forum'))
-                    
+                  
                 events_result = self.paginate_queryset(events, request)
                 serializer = FormGetSerializer(events_result, many=True)
                 
