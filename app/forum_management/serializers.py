@@ -25,7 +25,7 @@ class ForumDetailsSerializer(serializers.ModelSerializer):
 class ForumRoleNameGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = AddForum
-        fields = ['id', 'forum_role_name']
+        fields = ['id', 'forum_name','display_name','forum_role_name']
 
 class ForumListGetSerializer(serializers.ModelSerializer):
     class Meta:

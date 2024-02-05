@@ -122,7 +122,7 @@ class UpdateForumImage(APIView):
         
 class AllforumRoles(APIView):
     def get(self,request):
-        roles = AddForum.objects.values('forum_role_name').distinct()
+        roles = AddForum.objects.all().distinct()
         
 
         
@@ -226,7 +226,12 @@ class GetAllUsers(APIView):
         serializer = ForumGetSerializer(forums, many=True)
         return Response({'all_forums': serializer.data})
     
-    
+class GetAllForumNameandRole(APIView):
+    def get(self,request):
+        forums = AddForum.objects.all()
+        serializer = ForumGetSerializer(forums, many=True)
+        return Response({'all_forums': serializer.data})
+       
 class GetUserById(APIView):
     def get(self,request, pk):
         forums = AddForum.objects.get(id=pk)

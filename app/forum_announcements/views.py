@@ -12,7 +12,9 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from .models import create_dynamic_model,forumAnnouncements
 from django.db import connection
 # Create your views here.
-import datetime
+import json
+from vcec_bk.pagination import CustomPageNumberPagination
+from django.core.cache import cache
 
 @api_view(['POST'])
 def create_announcement(request):
@@ -136,24 +138,47 @@ def thumbnail_file(request, pk):
 
     return Response(status=status.HTTP_404_NOT_FOUND)
 
-@api_view(['GET'])
-def get_announcements(request):
-    try:
-        
-        announcements = forumAnnouncements.objects.all().order_by('-publish_date')
-        serializer = FormGetSerializer(announcements, many=True)
+class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
+    def get(self,request):
+        try:
+            page_number = request.query_params.get('page')
+            page_count = request.query_params.get('page_count')
+            forum = request.query_params.get('forum')
+                
+            if page_number is None:
+                page_number = 1
+                
+            if page_count is None:
+                page_count = 100
+                
 
-        return Response({"annoucements":serializer.data}, status=status.HTTP_200_OK)
-    except forumAnnouncements.DoesNotExist:
-        return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
-    
+            announcements_result_name = f"forum_announcements_{page_number}_{page_count}"
+            # announcements_cache_result = cache.get(announcements_result_name)
+            
+            announcements_cache_result = None
+            
+            if announcements_cache_result is None:
+                
+                if forum == "all":
+                    
+                    announcements = forumAnnouncements.objects.all().order_by('-publish_date')
+                    
+                elif forum != "all":
+                    announcements = forumAnnouncements.objects.filter(published_by__contains=forum).order_by('-publish_date')
+                    
+                self.paginate_queryset(announcements, request)
+                serializer = FormGetSerializer(announcements, many=True)
+                
+                cache.set(announcements_result_name, json.dumps(serializer.data),timeout=60*60*24*7)
+                
+                return Response({"annoucements":serializer.data}, status=status.HTTP_200_OK)
+            else:
+                print("Data from cache")
+                announcements_cache_result = json.loads(announcements_cache_result)
+                return Response({"events":announcements_cache_result}, status=status.HTTP_200_OK)
+        except forumAnnouncements.DoesNotExist:
+            return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
 
-@api_view(['GET'])
-def Currenttime(request):
-    import datetime
-    dt = datetime.now()
-    dayOfTheWeek = dt.isoweekday()
-    print(dayOfTheWeek)
 
 class GetAnnoucement(APIView):
     def get(self,request,id):
