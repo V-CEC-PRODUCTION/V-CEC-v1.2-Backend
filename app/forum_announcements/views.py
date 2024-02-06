@@ -15,7 +15,8 @@ from django.db import connection
 import json
 from vcec_bk.pagination import CustomPageNumberPagination
 from django.core.cache import cache
-
+from users.utils import Token, TokenUtil
+from users.models import User
 @api_view(['POST'])
 def create_announcement(request):
     serializer=FormSerializer(data=request.data)
@@ -179,7 +180,85 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
         except forumAnnouncements.DoesNotExist:
             return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
 
+class LikeEvent(APIView):
+    def post(self,request):
+        try:
+            announcement_id = request.data.get('announcement_id')
+            like_status = request.data.get('like_status')
+            
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            _, access_token = authorization_header.split()
+            
+            token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Validate the refresh token
+            access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+            
+            if not access_token_payload:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = access_token_payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
+            
+           
+            model_name ="forum_announcements_forum_announcements" + '_'+str(announcement_id)+'_likes'
+            cursor= connection.cursor()
+            cursor.execute(f"UPDATE {model_name} SET is_liked={like_status} WHERE user={user_id}")
+            cursor.close()
+        
+        except Exception as e:
+            return Response( f"An error occurred: {str(e)}")
+        
+class SetView(APIView):
+    def post(self, request):
+        try:
+            announcement_id = request.data.get('announcement_id')
+        
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            _, access_token = authorization_header.split()
+            
+            token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Validate the refresh token
+            access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+            
+            if not access_token_payload:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = access_token_payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_instance = User.objects.get(id=user_id)
+            
+            model_name ="forum_announcements_forum_announcements" + '_'+str(announcement_id)+'_likes'
+            
+            cursor= connection.cursor()
+            cursor.execute(f"INSERT INTO {model_name} (user,name,event_id) VALUES ({user_id},'{user_instance.username}',{announcement_id})")
+            cursor.close()
+            
+            return Response({"message": "Views record added successfully."},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response( f"An error occurred: {str(e)}")
 class GetAnnoucement(APIView):
     def get(self,request,id):
         try:
