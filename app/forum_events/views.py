@@ -16,7 +16,8 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from vcec_bk.pagination import CustomPageNumberPagination
 import json
-
+from users.models import User, Token
+from users.utils import TokenUtil
 class EventForumView(APIView):
     def get(self,request):
         try:
@@ -252,8 +253,16 @@ class GetEventById(APIView):
     def get(self,request,id):
         try:
             event=forumEvents.objects.get(id=id)
+            
+            model_name ="forum_events_forum_events" + '_'+str(id)+'_likes'
+            
+            cursor= connection.cursor()
+            
+            cursor.execute(f"SELECT COUNT(*) FROM {model_name} WHERE is_liked=true")
+            
+            count_likes = cursor.fetchone()[0]
             serializer=FormGetSerializer(event)
-            return Response(serializer.data,status=status.HTTP_200_OK)
+            return Response({"eveent_result": serializer.data, "total_likes": count_likes},status=status.HTTP_200_OK)
         except forumEvents.DoesNotExist:
             return Response({"status": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -271,3 +280,99 @@ def extract_unique_meaningful_words(text):
     unique_words = set(words)
 
     return unique_words
+
+class LikeEvent(APIView):
+    def post(self,request):
+        try:
+            event_id = request.query_params.get('event_id')
+            like_status = request.query_params.get('like_status')
+            
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            _, access_token = authorization_header.split()
+            
+            token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Validate the refresh token
+            access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+            
+            if not access_token_payload:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = access_token_payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
+            
+            user_id = str(user_id)
+           
+            model_name ="forum_events_forum_events" + '_'+str(event_id)+'_likes'
+            cursor= connection.cursor()
+            cursor.execute(f"UPDATE {model_name} SET is_liked=%s WHERE user_id=%s", [like_status , user_id])
+            cursor.close()
+            
+            return Response({"message": "Likes record added successfully."}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response( f"An error occurred: {str(e)}")
+        
+class SetView(APIView):
+    def post(self, request):
+       
+        try:
+            event_id = request.query_params.get('event_id')
+            
+            event_instance = forumEvents.objects.get(id=event_id)
+            
+            if event_instance is None:
+                return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+            
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            _, access_token = authorization_header.split()
+            
+            token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Validate the refresh token
+            access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+            
+            if not access_token_payload:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = access_token_payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            user_instance = User.objects.get(id=user_id)
+            
+            model_name = "forum_events_forum_events" + '_' + str(event_id) + '_likes'
+            
+            print(model_name)
+            
+            user_id = str(user_id)
+            
+            cursor = connection.cursor()
+            
+            cursor.execute(f"INSERT INTO {model_name} (user_id,name,event_id_id,is_liked,views) VALUES ({user_id},'{user_instance.name}',{event_id},false,true) ON CONFLICT (user_id) DO NOTHING;")
+            cursor.close()
+            
+            return Response({"message": "Views record added successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(str(e))
+            return Response(f"An error occurred: {str(e)}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)

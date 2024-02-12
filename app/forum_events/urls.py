@@ -11,5 +11,7 @@ urlpatterns = [
     path('cec/api/events/<int:pk>/thumbnail/',thumbnail_file,name='forum_events'),
     path('status/<int:id>/',EventStatus.as_view(),name='forum_events'),
     path('get-event/<int:id>/',GetEventById.as_view(),name='get-event-by-id'),
-    path('get/event/analysis/', GetEventAnalysis.as_view(), name='get-event-analysis')
+    path('get/event/analysis/', GetEventAnalysis.as_view(), name='get-event-analysis'),
+    path('set/views/user/', SetView.as_view(), name='set-views'),   
+    path('set/like/user/', LikeEvent.as_view(), name='set-likes'),
 ]

@@ -183,8 +183,8 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
 class LikeEvent(APIView):
     def post(self,request):
         try:
-            announcement_id = request.data.get('announcement_id')
-            like_status = request.data.get('like_status')
+            announcement_id = request.query_params.get('announcement_id')
+            like_status = request.query_params.get('like_status')
             
             authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
@@ -210,20 +210,30 @@ class LikeEvent(APIView):
             if not user_id:
                 return Response({'error': 'The refresh token is not associated with a user.'}, status=status.HTTP_404_NOT_FOUND)
             
+            user_id = str(user_id)
            
             model_name ="forum_announcements_forum_announcements" + '_'+str(announcement_id)+'_likes'
             cursor= connection.cursor()
-            cursor.execute(f"UPDATE {model_name} SET is_liked={like_status} WHERE user={user_id}")
+            cursor.execute(f"UPDATE {model_name} SET is_liked=%s WHERE user_id=%s", [like_status , user_id])
             cursor.close()
+            
+            return Response({"message": "Likes record added successfully."}, status=status.HTTP_200_OK)
         
         except Exception as e:
             return Response( f"An error occurred: {str(e)}")
         
 class SetView(APIView):
     def post(self, request):
+       
         try:
-            announcement_id = request.data.get('announcement_id')
-        
+            announcement_id = request.query_params.get('announcement_id')
+            
+            announcement_instance = forumAnnouncements.objects.get(id=announcement_id)
+            
+            if announcement_instance is None:
+                return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+            
             authorization_header = request.META.get("HTTP_AUTHORIZATION")
 
             if not authorization_header:
@@ -250,23 +260,36 @@ class SetView(APIView):
 
             user_instance = User.objects.get(id=user_id)
             
-            model_name ="forum_announcements_forum_announcements" + '_'+str(announcement_id)+'_likes'
+            model_name = "forum_announcements_forum_announcements" + '_' + str(announcement_id) + '_likes'
             
-            cursor= connection.cursor()
-            cursor.execute(f"INSERT INTO {model_name} (user,name,event_id) VALUES ({user_id},'{user_instance.username}',{announcement_id})")
+            print(model_name)
+            
+            user_id = str(user_id)
+            
+            cursor = connection.cursor()
+            
+            cursor.execute(f"INSERT INTO {model_name} (user_id,name,event_id,is_liked,views) VALUES ({user_id},'{user_instance.name}',{announcement_id},false,true) ON CONFLICT (user_id) DO NOTHING;")
             cursor.close()
             
-            return Response({"message": "Views record added successfully."},status=status.HTTP_200_OK)
+            return Response({"message": "Views record added successfully."}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response( f"An error occurred: {str(e)}")
+            print(str(e))
+            return Response(f"An error occurred: {str(e)}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class GetAnnoucement(APIView):
     def get(self,request,id):
         try:
-
+            model_name ="forum_announcements_forum_announcements" + '_'+str(id)+'_likes'
+            
+            cursor= connection.cursor()
+            
+            cursor.execute(f"SELECT COUNT(*) FROM {model_name} WHERE is_liked=true")
+            
+            count_likes = cursor.fetchone()[0]
+            
             announcement = forumAnnouncements.objects.get(id=id)
             serializer = FormGetSerializer(announcement)
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({"announcement_result": serializer.data, "total_likes": count_likes}, status=status.HTTP_200_OK)
         except forumAnnouncements.DoesNotExist:
             return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
     

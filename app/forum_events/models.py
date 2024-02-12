@@ -40,9 +40,8 @@ class Registration(models.Model):
 
 class LikeEvent(models.Model):
     event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE)
-    user_id = models.CharField(max_length=100,default='')
+    user_id = models.CharField(max_length=100,default='',unique=True)
     name = models.TextField()
-    date = models.DateTimeField(auto_now_add=True)
     is_liked=models.BooleanField(default=False)
     views=models.BooleanField(default=True)
 
