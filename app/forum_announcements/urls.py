@@ -11,4 +11,5 @@ urlpatterns =[
     path('get-announcement/<int:id>/',GetAnnoucement.as_view(),name='get-announcement-by-id'),
     path('set/views/user/', SetView.as_view(), name='set-views'),   
     path('set/like/user/', LikeEvent.as_view(), name='set-likes'),
+    path('get/likes/announcement/ind/', GetLikesAnnouncementInd.as_view(), name='get-likes-announcement-ind'),
 ]

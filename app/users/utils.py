@@ -9,9 +9,9 @@ class TokenUtil:
     @staticmethod
     def generate_tokens(user):
         # Check if tokens already exist for the user
-        existing_tokens = Token.objects.filter(user=user).first()
-        if existing_tokens:
-            existing_tokens.delete()
+        # existing_tokens = Token.objects.filter(user=user).first()
+        # if existing_tokens:
+        #     existing_tokens.delete()
             #return existing_tokens.access_token, existing_tokens.refresh_token
 
         # Generate new tokens

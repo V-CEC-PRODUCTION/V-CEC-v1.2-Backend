@@ -284,7 +284,7 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 
 
-ACCESS_TOKEN_EXPIRATION = 20  # Adjust as needed
+ACCESS_TOKEN_EXPIRATION = 120  # Adjust as needed
 REFRESH_TOKEN_EXPIRATION = 483840  # Adjust as needed
 
 

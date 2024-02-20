@@ -13,7 +13,6 @@ class User(models.Model):
     register_no = models.CharField(max_length=20,blank=True, null=True)
     ieee_membership_no = models.CharField(max_length=10,blank=True, null=True, default='')
     gender = models.CharField(max_length=10,blank=True, null=True)
-    logged_in = models.BooleanField(default=False)
     login_type = models.CharField(max_length=50, default="email")
     profile_image = models.ImageField(upload_to='users/profiles/', blank=True, null=True)
     thumbnail_profile_image = models.ImageField(upload_to='users/thumbnails/', blank=True, null=True)

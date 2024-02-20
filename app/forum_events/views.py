@@ -18,6 +18,7 @@ from vcec_bk.pagination import CustomPageNumberPagination
 import json
 from users.models import User, Token
 from users.utils import TokenUtil
+from forum_management.models import AddForum
 class EventForumView(APIView):
     def get(self,request):
         try:
@@ -29,6 +30,9 @@ class EventForumView(APIView):
         
 @api_view(['POST'])
 def create_event(request):
+    if request.data["register_button_link"]=='':
+        request.data["register_button_link"]='vcec_form'
+        
     serializer=FormSerializer(data=request.data)
     
     if serializer.is_valid():
@@ -43,7 +47,7 @@ def create_event(request):
         timestamp = int(time.time())
         random_string = ''.join(random.choices(string.ascii_letters, k=6))
         unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
-        serializer_instance.hashtags=extract_unique_meaningful_words(serializer_instance.content)
+        # serializer_instance.hashtags=extract_unique_meaningful_words(serializer_instance.content)
         serializer_instance.save()
 
         thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
@@ -58,7 +62,25 @@ def create_event(request):
     else:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
-
+class GetLikesEventInd(APIView):
+    def get(self,request):
+        try:
+            event_id = request.query_params.get('event_id')
+            model_name = "forum_events_forum_events" + '_' + str(event_id) + '_likes'
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT name, user_id FROM {model_name} WHERE is_liked=true")
+            count_likes = cursor.fetchall()
+            
+            all_likes = []
+            for like in count_likes:
+                user_instance = User.objects.get(id=like[1])
+                all_likes.append({"name": user_instance.name, "image_url": user_instance.image_url})
+            cursor.close()
+            
+            return Response({"event_likes": all_likes}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response( f"An error occurred: {str(e)}")
 class get_events(APIView,CustomPageNumberPagination):
     def get(self,request):
         try:
@@ -70,7 +92,7 @@ class get_events(APIView,CustomPageNumberPagination):
                 page_number = 1
                 
             if page_count is None:
-                page_count = 100
+                page_count = 1000
                 
             status_event = request.query_params.get('status')
                
@@ -91,9 +113,60 @@ class get_events(APIView,CustomPageNumberPagination):
                 events_result = self.paginate_queryset(events, request)
                 serializer = FormGetSerializer(events_result, many=True)
                 
-                cache.set(event_result_name, json.dumps(serializer.data),timeout=60*60*24*7)
+                event_data = serializer.data
                 
-                return Response({"events":serializer.data}, status=status.HTTP_200_OK)
+                for event in event_data:
+                    likes_table = "forum_events_forum_events" + '_' + str(event['id']) + '_likes'
+                    
+                    if event['register_button_link'] == "vcec_form":
+                        register_table = "forum_events_forum_events" + '_' + str(event['id']) + '_registration'
+                        
+                        cursor = connection.cursor()
+                        
+                        cursor.execute(f"SELECT COUNT(*) FROM {register_table}")
+                        
+                        total_registrations = cursor.fetchone()[0]
+                        
+                        if total_registrations is not None:
+                            print(total_registrations)
+                            if total_registrations >= 1:
+                                event['total_registrations'] = total_registrations
+                        else:
+                            event['total_registrations'] = 0
+                        
+                        cursor.execute(f"SELECT user_id FROM {likes_table} WHERE is_liked=true ORDER BY id DESC LIMIT 3")
+                        
+                        user_ids = cursor.fetchall()
+                        
+                        print(user_ids)
+                        event['liked_by'] = []
+                        for user_id in user_ids:
+                           
+                            user_instance = User.objects.get(id=user_id[0])
+                            event['liked_by'].append(user_instance.image_url)
+                        
+                        cursor.execute(f"SELECT COUNT(*) FROM {likes_table} WHERE is_liked=true")
+                        
+                        total_likes = cursor.fetchone()[0]
+                        
+                   
+                        event['total_likes'] = total_likes
+                 
+                            
+                        cursor.close()
+                        
+                for event_serialized in serializer.data:
+                    if 'total_registrations' not in event_serialized:
+                        event_serialized['total_registrations'] = 0
+                    if 'liked_by' not in event_serialized:
+                        event_serialized['liked_by'] = []
+                        
+                    if 'total_likes' not in event_serialized:
+                        event_serialized['total_likes'] = 0
+                        
+                cache.set(event_result_name, json.dumps(event_data),timeout=60*60*24*7)
+                
+                return Response({"events":event_data}, status=status.HTTP_200_OK)
             else:
                 print("Data from cache")
                 event_cache_result = json.loads(event_cache_result)
@@ -101,48 +174,102 @@ class get_events(APIView,CustomPageNumberPagination):
         except forumEvents.DoesNotExist:
             return Response({"status": "Forms not found"}, status=status.HTTP_404_NOT_FOUND)
 
-@api_view(['DELETE'])
-def delete_event(request,pk):
-    #deleting image and thumbnail image
-    try:
-        ob = forumEvents.objects.get(pk=pk)
-        
-    except ob.DoesNotExist:
-        return Response({"error": "Image not found."}, status=404)
-    
-    if ob.poster_image:
-        ob.poster_image.delete()
-    if ob.thumbnail_poster_image:
-        ob.thumbnail_poster_image.delete()
-    
-    tables=["forum_events_forum_events"+ '_'+str(ob.id)+'_likes', "forum_events_forum_events"+'_'+str(ob.id)+'_registration']
-
-    
-    ob.delete()
-    if ob.register_button_link=='vcec_form':
-
+class StudentRegisterEvent(APIView):
+    def post(self, request):
         try:
-            cursor= connection.cursor()
-            for table_name in tables:
-                cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
-        
-        except forumEvents.DoesNotExist:
-            return Response( "Event not found.")
-        except Exception as e:
-            return Response( f"An error occurred: {str(e)}")
-    else:
-        cursor=connection.cursor()
-        cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
-
-    connection.close()
-    
-    event_cache_name = "forum_events*"
-        
-    cache.delete_pattern(event_cache_name)
-        
-    return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
+            event_id = request.query_params.get('event_id')
             
+            authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+            if not authorization_header:
+                return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            _, access_token = authorization_header.split()
+            
+            token_key = Token.objects.filter(access_token=access_token).first()
+            
+            if not token_key:
+                return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Validate the refresh token
+            access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+            
+            if not access_token_payload:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if the refresh token is associated with a user (add your logic here)
+            user_id = access_token_payload.get('id')
+            
+            if not user_id:
+                return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        except Exception as e:
+            print(str(e))
+            return Response({"error": "An error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        try:
+            user_instance = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        registration_table = "forum_events_forum_events"+'_'+str(event_id)+'_registration'
+        
+        cursor = connection.cursor()
+        
+        cursor.execute(f"INSERT INTO {registration_table} (name, event_id_id, user_id, semester, division, email,gender) VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (user_id) DO NOTHING;", [user_instance.name, event_id, user_id, user_instance.semester, user_instance.division, user_instance.email, user_instance.gender])
+        
+        cursor.close()
+        
+        event_cache_name = "forum_events*"
+        
+        cache.delete_pattern(event_cache_name)
+        
+        return Response({"message": "Registration successful."}, status=status.HTTP_200_OK)
+class DeleteEvent(APIView):
+    def delete(self,request,pk):
+        #deleting image and thumbnail image
+        try:
+            ob = forumEvents.objects.get(pk=pk)
+            
+        except ob.DoesNotExist:
+            return Response({"error": "Image not found."}, status=404)
+        
+        if ob.poster_image:
+            ob.poster_image.delete()
+        if ob.thumbnail_poster_image:
+            ob.thumbnail_poster_image.delete()
+        
+        tables=["forum_events_forum_events"+ '_'+str(ob.id)+'_likes', "forum_events_forum_events"+'_'+str(ob.id)+'_registration']
+
+        
+        if ob.register_button_link=='vcec_form':
+            
+            ob.delete()
+            
+            try:
+                cursor= connection.cursor()
+                for table_name in tables:
+                    cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+            
+            except forumEvents.DoesNotExist:
+                return Response( "Event not found.")
+            except Exception as e:
+                return Response( f"An error occurred: {str(e)}")
+        else:
+            ob.delete()
+            
+            cursor=connection.cursor()
+            cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
+
+        connection.close()
+        
+        event_cache_name = "forum_events*"
+            
+        cache.delete_pattern(event_cache_name)
+            
+        return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
                 
+                    
 class GetEventAnalysis(APIView):
     def get(self,request):
         try:
@@ -254,15 +381,87 @@ class GetEventById(APIView):
         try:
             event=forumEvents.objects.get(id=id)
             
-            model_name ="forum_events_forum_events" + '_'+str(id)+'_likes'
+            try:
             
+                authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+                if not authorization_header:
+                    return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+                
+                _, access_token = authorization_header.split()
+                
+                token_key = Token.objects.filter(access_token=access_token).first()
+                
+                if not token_key:
+                    return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+                # Validate the refresh token
+                access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+                
+                if not access_token_payload:
+                    return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+                # Check if the refresh token is associated with a user (add your logic here)
+                user_id = access_token_payload.get('id')
+                
+                if not user_id:
+                    return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            except Exception as e:
+                print(str(e))
+                return Response({"error": "An error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            
+            forums_divided = event.published_by.split(',')
+            
+            print(forums_divided)
+            forum_image_url = []
+            
+            for forum in forums_divided:
+                forum_instance = AddForum.objects.get(forum_role_name=forum)
+                forum_image_url.append({"image_url": forum_instance.image_url})
+                
+            model_name ="forum_events_forum_events" + '_'+str(id)+'_likes'
+            print(user_id,id)
             cursor= connection.cursor()
             
             cursor.execute(f"SELECT COUNT(*) FROM {model_name} WHERE is_liked=true")
             
             count_likes = cursor.fetchone()[0]
+            
+            user_id = str(user_id)
+            
+            cursor.execute(f"SELECT is_liked FROM {model_name} WHERE user_id=%s", [user_id])
+            
+            fetch_result = cursor.fetchone()
+            if fetch_result is None:
+                is_liked = False
+            else:
+                is_liked = fetch_result[0]
+                
+            user_instance = User.objects.get(id=user_id)
+            
+            if user_instance.role == "guest":
+                register_button = False
+            else:
+                register_button = True
+            
+            if event.register_button_link == "vcec_form":
+                register_table = "forum_events_forum_events"+'_'+str(id)+'_registration'
+                
+                cursor.execute(f"SELECT COUNT(*) FROM {register_table} WHERE user_id=%s", [user_id])
+                
+                fetch_result = cursor.fetchone()[0]
+                
+                if fetch_result > 0:
+                    already_registered = True
+                else:
+                    already_registered = False
+            else:
+                already_registered = False
+            
             serializer=FormGetSerializer(event)
-            return Response({"eveent_result": serializer.data, "total_likes": count_likes},status=status.HTTP_200_OK)
+            return Response({"event_result": serializer.data, "total_likes": count_likes,"conducted_by": forum_image_url,"is_liked": is_liked, "register_button": register_button,"already_registered": already_registered},status=status.HTTP_200_OK)
         except forumEvents.DoesNotExist:
             return Response({"status": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -318,6 +517,10 @@ class LikeEvent(APIView):
             cursor.execute(f"UPDATE {model_name} SET is_liked=%s WHERE user_id=%s", [like_status , user_id])
             cursor.close()
             
+            event_cache_name = "forum_events*"
+        
+            cache.delete_pattern(event_cache_name)
+            
             return Response({"message": "Likes record added successfully."}, status=status.HTTP_200_OK)
         
         except Exception as e:
@@ -371,6 +574,10 @@ class SetView(APIView):
             
             cursor.execute(f"INSERT INTO {model_name} (user_id,name,event_id_id,is_liked,views) VALUES ({user_id},'{user_instance.name}',{event_id},false,true) ON CONFLICT (user_id) DO NOTHING;")
             cursor.close()
+            
+            event_cache_name = "forum_events*"
+        
+            cache.delete_pattern(event_cache_name)
             
             return Response({"message": "Views record added successfully."}, status=status.HTTP_200_OK)
         except Exception as e:

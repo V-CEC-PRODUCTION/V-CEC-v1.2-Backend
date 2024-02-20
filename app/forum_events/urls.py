@@ -3,7 +3,7 @@ from .views import *
 
 urlpatterns = [
     path('create-event/',create_event,name='create-form'),
-    path('delete-event/<int:pk>/',delete_event,name="delete-event"),
+    path('delete-event/<int:pk>/',DeleteEvent.as_view(),name="delete-event"),
     path('admin/get/', EventForumView.as_view(), name='forum_events'),
     path('get-event/',get_events.as_view(),name="get-event"),
     path('update-event/<int:id>/',update_event,name='update-form'),
@@ -14,4 +14,6 @@ urlpatterns = [
     path('get/event/analysis/', GetEventAnalysis.as_view(), name='get-event-analysis'),
     path('set/views/user/', SetView.as_view(), name='set-views'),   
     path('set/like/user/', LikeEvent.as_view(), name='set-likes'),
+    path('student/register/', StudentRegisterEvent.as_view(), name='student-register'),
+    path('get/likes/event/ind/', GetLikesEventInd.as_view(), name='get-likes-event-ind'),   
 ]

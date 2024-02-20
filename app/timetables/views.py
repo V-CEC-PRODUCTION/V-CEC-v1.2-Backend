@@ -9,6 +9,13 @@ from rest_framework.views import APIView
 from users.models import User, Token
 from users.utils import TokenUtil
 from datetime import datetime, time
+
+from django.http import HttpRequest
+
+def get_base_url(request: HttpRequest):
+    base_url = request.build_absolute_uri('/')[:-1]  # Get base URL without trailing slash
+    return base_url
+
 # Create your views here.
 @api_view(['POST'])
 def create_timetables(request):
@@ -179,8 +186,14 @@ class GetCurrentCode(APIView):
                     data[field] = data[field].split("-")[0]
                     data[field] = data[field].split(" ")[0]
                
+            base_url = get_base_url(request)
+            print(base_url)
             
-            return Response({"result": serializer.data,"thumbnail_url":user.thumbnail_url, "image_thumbnail_url": user.image_url}, status=status.HTTP_200_OK)
+            if user.image_url != None or user.thumbnail_url != None:
+                return Response({"result": serializer.data,"thumbnail_url": user.thumbnail_url, "image_thumbnail_url": user.image_url}, status=status.HTTP_200_OK)
+            
+            return Response({"result":serializer.data, "thumbnail_url": "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwMi1wLnBuZw.png", "image_thumbnail_url": "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwMi1wLnBuZw.png" }, status=status.HTTP_200_OK)
+            
         except TimeTable.DoesNotExist:
             return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)
             

@@ -17,6 +17,8 @@ from vcec_bk.pagination import CustomPageNumberPagination
 from django.core.cache import cache
 from users.utils import Token, TokenUtil
 from users.models import User
+from forum_management.models import AddForum
+
 @api_view(['POST'])
 def create_announcement(request):
     serializer=FormSerializer(data=request.data)
@@ -43,11 +45,35 @@ def create_announcement(request):
         serializer_instance.thumbnail_poster_image.save(unique_filename, thumbnail, save=True)
         
         model_name ="forum_announcements" + '_'+str(serializer_instance.id)+'_likes'
+        
+        announcement_cache_name = "forum_announcements*"
+        
+        cache.delete_pattern(announcement_cache_name)
+        
         if create_dynamic_model(model_name,serializer_instance.id):
             return Response(serializer.data,status.HTTP_200_OK)
     else:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+class GetLikesAnnouncementInd(APIView):
+    def get(self,request):
+        try:
+            announcement_id = request.query_params.get('announcement_id')
+            model_name = "forum_announcements_forum_announcements" + '_' + str(announcement_id) + '_likes'
+            cursor = connection.cursor()
+            cursor.execute(f"SELECT name, user_id FROM {model_name} WHERE is_liked=true")
+            count_likes = cursor.fetchall()
+            
+            all_likes = []
+            for like in count_likes:
+                user_instance = User.objects.get(id=like[1])
+                all_likes.append({"name": user_instance.name, "image_url": user_instance.image_url})
+            cursor.close()
+            
+            return Response({"event_likes": all_likes}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response( f"An error occurred: {str(e)}")
 @api_view(['PUT'])
 def update_announcement(request,id):
 
@@ -69,7 +95,12 @@ def update_announcement(request,id):
             cur.execute(f"UPDATE forum_announcements_forumannouncements SET button_name='{serializer.data['button_name']}' WHERE id={id}")
 
         cur.close()
-        connection.close()
+
+        announcement_cache_name = "forum_announcements*"
+        
+        cache.delete_pattern(announcement_cache_name)
+        
+
         return Response({"message": "Record Updated successfully."},status=status.HTTP_200_OK)
 
     else:
@@ -96,7 +127,10 @@ def delete_announcement(request,pk):
     try:
         cursor= connection.cursor()
         cursor.execute(f"DROP TABLE IF EXISTS {model_name}")
-    
+
+        announcement_cache_name = "forum_announcements*"
+        
+        cache.delete_pattern(announcement_cache_name)
     except forumAnnouncements.DoesNotExist:
         return Response( "Event not found.")
     except Exception as e:
@@ -150,7 +184,7 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
                 page_number = 1
                 
             if page_count is None:
-                page_count = 100
+                page_count = 1000
                 
 
             announcements_result_name = f"forum_announcements_{page_number}_{page_count}"
@@ -170,7 +204,43 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
                 self.paginate_queryset(announcements, request)
                 serializer = FormGetSerializer(announcements, many=True)
                 
-                cache.set(announcements_result_name, json.dumps(serializer.data),timeout=60*60*24*7)
+                announcement_data = serializer.data
+                
+                for announcement in announcement_data:
+                    likes_table = "forum_announcements_forum_announcements" + '_' + str(announcement['id']) + '_likes'
+                    
+                    cursor = connection.cursor()
+                        
+                    cursor.execute(f"SELECT user_id FROM {likes_table} WHERE is_liked=true ORDER BY id DESC LIMIT 3")
+                    
+                    user_ids = cursor.fetchall()
+                    
+                    print(user_ids)
+                    announcement['liked_by'] = []
+                    for user_id in user_ids:
+                        
+                        user_instance = User.objects.get(id=user_id[0])
+                        announcement['liked_by'].append(user_instance.image_url)
+                    
+                    cursor.execute(f"SELECT COUNT(*) FROM {likes_table} WHERE is_liked=true")
+                    
+                    total_likes = cursor.fetchone()[0]
+                    
+                
+                    announcement['total_likes'] = total_likes
+                
+                        
+                    cursor.close()
+                        
+                for announcement_serialized in serializer.data:
+
+                    if 'liked_by' not in announcement_serialized:
+                        announcement_serialized['liked_by'] = []
+                        
+                    if 'total_likes' not in announcement_serialized:
+                        announcement_serialized['total_likes'] = 0
+                        
+                cache.set(announcements_result_name, json.dumps(announcement_data),timeout=60*60*24*7)
                 
                 return Response({"annoucements":serializer.data}, status=status.HTTP_200_OK)
             else:
@@ -217,6 +287,10 @@ class LikeEvent(APIView):
             cursor.execute(f"UPDATE {model_name} SET is_liked=%s WHERE user_id=%s", [like_status , user_id])
             cursor.close()
             
+            announcement_cache_name = "forum_announcements*"
+        
+            cache.delete_pattern(announcement_cache_name)    
+                    
             return Response({"message": "Likes record added successfully."}, status=status.HTTP_200_OK)
         
         except Exception as e:
@@ -271,6 +345,10 @@ class SetView(APIView):
             cursor.execute(f"INSERT INTO {model_name} (user_id,name,event_id,is_liked,views) VALUES ({user_id},'{user_instance.name}',{announcement_id},false,true) ON CONFLICT (user_id) DO NOTHING;")
             cursor.close()
             
+            announcement_cache_name = "forum_announcements*"
+        
+            cache.delete_pattern(announcement_cache_name)
+            
             return Response({"message": "Views record added successfully."}, status=status.HTTP_200_OK)
         except Exception as e:
             print(str(e))
@@ -280,16 +358,65 @@ class GetAnnoucement(APIView):
         try:
             model_name ="forum_announcements_forum_announcements" + '_'+str(id)+'_likes'
             
+            announcement = forumAnnouncements.objects.get(id=id)
+            
+            try:
+            
+                authorization_header = request.META.get("HTTP_AUTHORIZATION")
+
+                if not authorization_header:
+                    return Response({"error": "Access token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+                
+                _, access_token = authorization_header.split()
+                
+                token_key = Token.objects.filter(access_token=access_token).first()
+                
+                if not token_key:
+                    return Response({"error": "Access token not found please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+
+                # Validate the refresh token
+                access_token_payload = TokenUtil.decode_token(token_key.refresh_token)
+                
+                if not access_token_payload:
+                    return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+                # Check if the refresh token is associated with a user (add your logic here)
+                user_id = access_token_payload.get('id')
+                
+                if not user_id:
+                    return Response({'error': 'Invalid refresh token or expired refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            except Exception as e:
+                print(str(e))
+                return Response({"error": "An error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            forums_divided = announcement.published_by.split(',')
+            
+            print(forums_divided)
+            forum_image_url = []
+            
+            for forum in forums_divided:
+                forum_instance = AddForum.objects.get(forum_role_name=forum)
+                forum_image_url.append({"image_url": forum_instance.image_url})
+            
             cursor= connection.cursor()
             
             cursor.execute(f"SELECT COUNT(*) FROM {model_name} WHERE is_liked=true")
             
             count_likes = cursor.fetchone()[0]
             
-            announcement = forumAnnouncements.objects.get(id=id)
+            user_id = str(user_id)
+            
+            cursor.execute(f"SELECT is_liked FROM {model_name} WHERE user_id=%s", [user_id])
+            
+            fetch_result = cursor.fetchone()
+            if fetch_result is None:
+                is_liked = False
+            else:
+                is_liked = fetch_result[0]
             serializer = FormGetSerializer(announcement)
 
-            return Response({"announcement_result": serializer.data, "total_likes": count_likes}, status=status.HTTP_200_OK)
+            return Response({"announcement_result": serializer.data, "total_likes": count_likes, "conducted_by": forum_image_url, "is_liked": is_liked}, status=status.HTTP_200_OK)
         except forumAnnouncements.DoesNotExist:
             return Response({"status": "Records not found"}, status=status.HTTP_404_NOT_FOUND)
     

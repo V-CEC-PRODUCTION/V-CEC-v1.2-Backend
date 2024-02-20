@@ -17,10 +17,101 @@ from celery import shared_task
 from .utils import TokenUtil
 from io import BytesIO
 from PIL import Image as PilImage
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import random,time, string, os, jwt
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import render
+from django.core.cache import cache
 
+
+def generate_token(user_id, email):
+    # Set the expiration time for the token (e.g., 1 hour from now)
+    expiration_time = datetime.utcnow() + timedelta(minutes=5)
+    
+    # Create the payload dictionary
+    payload = {
+        'user_id': user_id,
+        'email': email,
+        'exp': expiration_time  # Expiration time
+    }
+    
+    # Replace 'your_secret_key' with your own secret key
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return token
+
+class ForgotPassword(APIView):
+    def post(self,request):
+       
+        email = request.data.get('email')
+        
+        try:
+            user = User.objects.get(email=email, login_type='email')
+        except User.DoesNotExist:
+            user = None
+
+        if user is not None:
+            token = generate_token(user.id, email)
+            
+            reset_link = f"http://{request.get_host()}/users/auth/reset/password/{token}/"
+            
+            subject = 'Password Reset Mail for VCEC'
+
+            from_email = 'proddecapp@gmail.com'
+            
+            receipient = [email]
+            html_message = render_to_string('reset_mail.html', {'reset_link': reset_link})
+
+            # Send the email with HTML content
+            send_mail(subject, '', from_email, receipient, html_message=html_message)
+
+            return Response({'message': 'Password reset mail sent successfully'}, status=status.HTTP_200_OK)
+        else:
+
+            return Response({'message': 'No user with that email address found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+class ResetPassword(APIView):
+    def get(self, request, token):
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            expiration_time = datetime.utcfromtimestamp(payload['exp'])
+            current_time = datetime.utcnow()
+
+            if current_time <= expiration_time:
+                return render(request, 'password_change.html', {'validlink': True, 'user_id': payload['user_id']})
+            else:
+                return render(request, 'password_change.html', {'validlink': False})
+        except jwt.ExpiredSignatureError:
+            return HttpResponseBadRequest('Password reset link has expired.')
+        except jwt.InvalidTokenError:
+            return HttpResponseBadRequest('Invalid password reset link.')
+        
+        
+class ResetPasswordSubmit(APIView):
+    def get(self, request):
+        user_id = request.GET['user_id']
+        password = request.GET['password']
+        confirm_password = request.GET['confirm_password']
+        
+        try:
+            
+            if password == confirm_password:
+                admin_instance = User.objects.get(id=user_id)
+                
+                admin_instance.password = make_password(password)
+                
+                admin_instance.save()
+                
+                return render(request, 'password_change_success.html')
+            
+            else:
+                return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+ 
 @api_view(['POST'])
 @shared_task
 def send_otp(request):
@@ -40,7 +131,7 @@ def send_otp(request):
             
             from_email = 'proddecapp@gmail.com'
             
-            html_message = render_to_string('otp_email_template.html', {'otp': otp})
+            html_message = render_to_string('otp_mail.html', {'otp': otp})
 
             # Send the email with HTML content
             send_mail(subject, '', from_email, [user_email], html_message=html_message)
@@ -245,6 +336,14 @@ class UpdateProfilePhotoUser(APIView):
                     thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
                     image_instance.thumbnail_profile_image.save(unique_filename, thumbnail, save=True)
                     
+                    event_cache_name = "forum_events*"
+        
+                    cache.delete_pattern(event_cache_name)
+                    
+                    announcement_cache_name = "forum_announcements*"
+                    
+                    cache.delete_pattern(announcement_cache_name)
+                    
                     return Response({"result": "successfully updated profile image"}, status=status.HTTP_200_OK)
             else:
                 return Response({"error": "Profile photo is missing."}, status=status.HTTP_400_BAD_REQUEST)  
@@ -307,9 +406,15 @@ class UpdateUser(APIView):
         print(user.admission_no, request.data.get('admission_no'))
         serializer = UserSerializer(instance=user)
         
+        event_cache_name = "forum_events*"
+
+        cache.delete_pattern(event_cache_name)
         
+        announcement_cache_name = "forum_announcements*"
+        
+        cache.delete_pattern(announcement_cache_name)
             
-        return Response(serializer.data)
+        return Response({"result":serializer.data}, status = status.HTTP_200_OK)
 
 
 # delete user
@@ -557,34 +662,26 @@ class LoginUser(APIView):
             print(user)
             
             if user is not None:
-                
-                if user.logged_in:
-                    try:
-                        user_token = Token.objects.get(user_id=user.id)
-                    except ObjectDoesNotExist:
-                        return Response("User token does not exist!", status=status.HTTP_404_NOT_FOUND)
+
+                try:
+                    user_token = Token.objects.get(user_id=user.id)
                     user_token.delete()
-                    print("User logged in and starting to blacklist token")
-                    
+                except Token.DoesNotExist:
+                    pass
+                
 
                 if check_password(request.data['password'], user.password):
                     # Generate refresh and access tokens
                     access_token, refresh_token = TokenUtil.generate_tokens(user)
                     
-                    print(access_token, refresh_token)
-                    # Validate tokens
-                    if TokenUtil.validate_tokens(access_token, refresh_token):
-                        user.logged_in = True
-                        user.save()
 
-                        return Response({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
-                    else:
-                        return Response({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED) 
+                    return Response({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
 
                 else:
                     return Response("Password is incorrect!", status=status.HTTP_400_BAD_REQUEST)
         
-        except ObjectDoesNotExist:
+        except Exception as e:
+            print(e)
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
 
 class CheckEmailExist(APIView): 
@@ -640,25 +737,7 @@ class RequestAccessToken(APIView):
             
             return Response({'access_token': access_token}, status=status.HTTP_200_OK)
  
-class ForgotPassword(APIView):
-    def post(self, request):
-        try:
-            user = User.objects.get(email=request.data['email'], login_type='email')
-            
-            if user is not None:
-                user.password = make_password(request.data['password'])
-                
-                user_token = Token.objects.get(user_id=user.id)
-                
-                user_token.delete()
-                
-            else:
-                return Response("User is not registered with google!", status=status.HTTP_400_BAD_REQUEST)
-            
-        except ObjectDoesNotExist:
-            
-            return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
-        
+
 # logout user
 class LogoutUser(APIView):
     def post(self,request):

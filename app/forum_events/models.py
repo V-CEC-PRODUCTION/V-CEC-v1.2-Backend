@@ -30,10 +30,10 @@ class forumEvents(models.Model):
 class Registration(models.Model):
     name = models.TextField()
     event_id = models.ForeignKey(forumEvents, on_delete=models.CASCADE) 
+    user_id = models.CharField(max_length=100,default='',unique=True)
     semester = models.CharField(max_length=10)
     division = models.CharField(max_length=10)
     email = models.TextField()
-    phone_no = models.TextField()
     gender = models.TextField(default='Other')
     
 

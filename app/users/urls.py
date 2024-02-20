@@ -22,5 +22,8 @@ urlpatterns = [
     path('check/email/exist/', views.CheckEmailExist.as_view(), name='check-email-exist'),
     path('get/user/details/',views.GetUserDetails.as_view(),name='get-user-details'),
     path('api/images/<int:pk>/file/', views.ImageFile.as_view(), name='image-file'),
-    path('api/images/<int:pk>/thumbnail/', views.ThumbnailFile.as_view(), name='thumbnail-file')
+    path('api/images/<int:pk>/thumbnail/', views.ThumbnailFile.as_view(), name='thumbnail-file'),
+    path('forgot/password/', views.ForgotPassword.as_view(), name='forgot-password'),
+    path('reset/password/<token>/', views.ResetPassword.as_view(), name='reset-password'),
+    path('reset/confirm/submit/', views.ResetPasswordSubmit.as_view(), name='reset-password-submit'),
 ]
