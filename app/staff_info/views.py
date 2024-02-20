@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
 import json
 from vcec_bk.pagination import CustomPageNumberPagination
-
+from django.db.models import Max
 
 class full_staff_search(APIView,CustomPageNumberPagination):
     def get(self,request,search):
@@ -58,6 +58,7 @@ class search_staff_dep(APIView,CustomPageNumberPagination):
             
             response = {
                 "staff_info": serializer.data,
+                "total_pages": self.page.paginator.num_pages,
                 "has_next": self.page.has_next(),
                 "has_previous": self.page.has_previous(),
                 "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
@@ -169,16 +170,31 @@ class staff_list(APIView,CustomPageNumberPagination):
         return Response(response)
 
     def post(self,request):
+
+        staff_instance = staffInfo.objects.aggregate(max_value=Max('id'))['max_value']
+        
+        print(staff_instance)
+        
+        request.data['department'] = str(request.data['department']).upper()
+        
+        
+        request.data['id'] = staff_instance + 1
+        
         serializer = StaffSerializer(data=request.data)
         
-        if serializer.is_valid():
-            serializer.save()
-    
-            for dep_name in ['CSE*','EEE*','ECE*','GE*','BSL*','LIB*','all_staff*']:        
-                cache.delete_pattern(dep_name)
-                
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:        
+            if serializer.is_valid():
+                serializer.save()
+        
+                for dep_name in ['CSE*','EEE*','ECE*','GE*','BSL*','LIB*','all_staff*']:        
+                    cache.delete_pattern(dep_name)
+                    
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"error":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(e)
+            return Response({"error":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
 def staff_detail(request, pk):
