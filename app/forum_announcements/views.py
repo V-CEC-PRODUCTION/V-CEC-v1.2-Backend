@@ -177,7 +177,7 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
     def get(self,request):
         try:
             page_number = request.query_params.get('page')
-            page_count = request.query_params.get('page_count')
+            page_count = request.query_params.get('count')
             forum = request.query_params.get('forum')
                 
             if page_number is None:
@@ -185,7 +185,7 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
                 
             if page_count is None:
                 page_count = 1000
-                
+            print("Forum=",forum)
 
             announcements_result_name = f"forum_announcements_{page_number}_{page_count}"
             # announcements_cache_result = cache.get(announcements_result_name)
@@ -241,8 +241,16 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
                         announcement_serialized['total_likes'] = 0
                         
                 cache.set(announcements_result_name, json.dumps(announcement_data),timeout=60*60*24*7)
+                response = {
+                    "announcements": serializer.data,
+                    "total_pages": self.page.paginator.num_pages,
+                    "has_next": self.page.has_next(),
+                    "has_previous": self.page.has_previous(),
+                    "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                    "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
+                }
                 
-                return Response({"annoucements":serializer.data}, status=status.HTTP_200_OK)
+                return Response(response, status=status.HTTP_200_OK)
             else:
                 print("Data from cache")
                 announcements_cache_result = json.loads(announcements_cache_result)

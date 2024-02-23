@@ -85,7 +85,7 @@ class get_events(APIView,CustomPageNumberPagination):
     def get(self,request):
         try:
             page_number = request.query_params.get('page')
-            page_count = request.query_params.get('page_count')
+            page_count = request.query_params.get('count')
             forum = request.query_params.get('forum')
                 
             if page_number is None:
@@ -93,7 +93,7 @@ class get_events(APIView,CustomPageNumberPagination):
                 
             if page_count is None:
                 page_count = 1000
-                
+            print(page_count,page_number)
             status_event = request.query_params.get('status')
                
             event_result_name = f"forum_events_{page_number}_{page_count}_{status_event}"
@@ -128,7 +128,7 @@ class get_events(APIView,CustomPageNumberPagination):
                         total_registrations = cursor.fetchone()[0]
                         
                         if total_registrations is not None:
-                            print(total_registrations)
+                            # print(total_registrations)
                             if total_registrations >= 1:
                                 event['total_registrations'] = total_registrations
                         else:
@@ -138,7 +138,7 @@ class get_events(APIView,CustomPageNumberPagination):
                         
                         user_ids = cursor.fetchall()
                         
-                        print(user_ids)
+                        # print(user_ids)
                         event['liked_by'] = []
                         for user_id in user_ids:
                            
@@ -165,8 +165,16 @@ class get_events(APIView,CustomPageNumberPagination):
                         event_serialized['total_likes'] = 0
                         
                 cache.set(event_result_name, json.dumps(event_data),timeout=60*60*24*7)
+                response = {
+                    "events": event_data,
+                    "total_pages": self.page.paginator.num_pages,
+                    "has_next": self.page.has_next(),
+                    "has_previous": self.page.has_previous(),
+                    "next_page_number": self.page.next_page_number() if self.page.has_next() else None,
+                    "previous_page_number": self.page.previous_page_number() if self.page.has_previous() else None,
+                }
                 
-                return Response({"events":event_data}, status=status.HTTP_200_OK)
+                return Response(response, status=status.HTTP_200_OK)
             else:
                 print("Data from cache")
                 event_cache_result = json.loads(event_cache_result)
