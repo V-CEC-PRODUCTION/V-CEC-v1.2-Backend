@@ -625,23 +625,27 @@ class LoginUserGoogle(APIView):
         try:
             user=User.objects.get(email=request.data['email'], login_type='google')
             
+            print(user.email)
             if user is not None:
                 
                 
-                if user.logged_in and user.device_id != '':
-                    user_token = Token.objects.get(user_id=user.id)
+                if user.device_id is not None:
                     
-                    user_token.delete()
-                
+                    try:
+                        user_token = Token.objects.get(user_id=user.id)
+                        
+                        user_token.delete()
+                    except Exception as e:
+                        print(e)
+                        pass
+                    
                 
                 
                 access_token, refresh_token = TokenUtil.generate_tokens(user)
                 
                 # Validate tokens
                 if TokenUtil.validate_tokens(access_token, refresh_token):
-                    user.logged_in = True
-                    user.save()
-
+                    
                     return Response({'access_token': access_token, 'refresh_token': refresh_token}, status=status.HTTP_200_OK)
                 else:
                     return Response({'error': 'Invalid tokens.'}, status=status.HTTP_401_UNAUTHORIZED) 
@@ -650,7 +654,8 @@ class LoginUserGoogle(APIView):
             else:
                 return Response("User is not registered with google!", status=status.HTTP_400_BAD_REQUEST)
         
-        except ObjectDoesNotExist:
+        except Exception as e:
+            print(e)
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
     
 # login user

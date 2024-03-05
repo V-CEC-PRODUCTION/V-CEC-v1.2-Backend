@@ -162,37 +162,38 @@ class GetCurrentCode(APIView):
             user = User.objects.get(id=user_id) 
                 
             
-            dt = datetime.now()
-            
-            day = dt.weekday()
-            
-            currenttime = dt.time().hour
-            
-            print(currenttime)
-            
-            if day in [5,6]:
-                day = 1
-            else:
-                day = day + 1 
+            if user.role == 'student':
+                dt = datetime.now()
+                
+                day = dt.weekday()
+                
+                currenttime = dt.time().hour
+                
+                print(currenttime)
+                
+                if day in [5,6]:
+                    day = 1
+                else:
+                    day = day + 1 
 
-            semester = str(user.semester)[1]    
-            
-            timetable = TimeTable.objects.filter(semester=semester,division=user.division,day=day)
+                semester = str(user.semester)[1]    
+                
+                timetable = TimeTable.objects.filter(semester=semester,division=user.division,day=day)
 
-            serializer = TimeTableClientSerializer(timetable, many=True)
+                serializer = TimeTableClientSerializer(timetable, many=True)
+                
+                for data in serializer.data:
+                    for field in ['firsttime', 'secondtime', 'thirdtime', 'fourthtime', 'fifthtime', 'sixthtime']:
+                        data[field] = data[field].split("-")[0]
+                        data[field] = data[field].split(" ")[0]
             
-            for data in serializer.data:
-                for field in ['firsttime', 'secondtime', 'thirdtime', 'fourthtime', 'fifthtime', 'sixthtime']:
-                    data[field] = data[field].split("-")[0]
-                    data[field] = data[field].split(" ")[0]
-               
-            base_url = get_base_url(request)
-            print(base_url)
+              
+
+                if user.image_url != None or user.thumbnail_url != None:
+                    return Response({"result": serializer.data,"thumbnail_url": user.thumbnail_url, "image_thumbnail_url": user.image_url, "name": user.name}, status=status.HTTP_200_OK)
             
-            if user.image_url != None or user.thumbnail_url != None:
-                return Response({"result": serializer.data,"thumbnail_url": user.thumbnail_url, "image_thumbnail_url": user.image_url}, status=status.HTTP_200_OK)
-            
-            return Response({"result":serializer.data, "thumbnail_url": "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwMi1wLnBuZw.png", "image_thumbnail_url": "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwMi1wLnBuZw.png" }, status=status.HTTP_200_OK)
+            else:   
+                return Response({"result": "","thumbnail_url": user.thumbnail_url, "image_thumbnail_url": user.image_url, "name": user.name}, status=status.HTTP_200_OK)
             
         except TimeTable.DoesNotExist:
             return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)

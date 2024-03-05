@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'channels',
     'channels_postgres',
     'daphne',
+    'storages',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -288,8 +289,8 @@ ACCESS_TOKEN_EXPIRATION = 120  # Adjust as needed
 REFRESH_TOKEN_EXPIRATION = 483840  # Adjust as needed
 
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Password validation
@@ -324,9 +325,44 @@ USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "storages.backends.azure_storage.AzureStorage",
+#         "OPTIONS": {
+#             "account_name": "vcecmediavault",
+#             "account_key": "",
+#             "AZURE_CONTAINER": {
+#                 "container1": {
+#                     "container": "media",
+#                     "public_access": "public|private",  # Choose the appropriate access level
+#                     # Add other container-specific options here
+#                 },
+#                 "container2": {
+#                     "container": "static",
+#                     "public_access": "public|private",  # Choose the appropriate access level
+#                     # Add other container-specific options here
+#                 },
+#                 # Add more containers as needed
+#             },
+#         },
+#     },
+# }
+# STATIC_URL = 'static/'
+DEFAULT_FILE_STORAGE = 'vcec_bk.azure_storages.AzureMediaStorage'
+STATICFILES_STORAGE = 'vcec_bk.azure_storages.AzureStaticStorage'
 
-STATIC_URL = 'static/'
+STATIC_LOCATION = "static"
+MEDIA_LOCATION = "media"
 
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_ROOT = BASE_DIR / 'mediafiles'
+
+AZURE_ACCOUNT_KEY = os.getenv('AZURE_ACCOUNT_KEY')
+AZURE_ACCOUNT_NAME = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
+AZURE_CUSTOM_DOMAIN = f'{AZURE_ACCOUNT_NAME}.blob.core.windows.net'
+STATIC_URL = f'https://{AZURE_CUSTOM_DOMAIN}/{STATIC_LOCATION}/'
+MEDIA_URL = f'https://{AZURE_CUSTOM_DOMAIN}/{MEDIA_LOCATION}/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
