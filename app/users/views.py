@@ -479,12 +479,15 @@ class SignUpUserGoogle(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
         except KeyError as e:
+            print(e)
             return Response(f"Missing key: {str(e)}", status=status.HTTP_400_BAD_REQUEST)
 
         except ValidationError as e:
+            print(e)
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
+            print(e)
             return Response({"detail": "An error occurred while processing your request."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
       
 
@@ -773,25 +776,15 @@ class LogoutUser(APIView):
             
             if not user_id:
                 return Response({'error': 'The access token is not associated with a user.'}, status=status.HTTP_401_UNAUTHORIZED)
-            
-            user = User.objects.get(id=user_id) 
+                     
+            print("User logged out and starting to blacklist token")
+            if TokenUtil.is_token_valid(token):
+                TokenUtil.blacklist_token(token)
                 
-            if user.logged_in:
-                # Blacklist the user's refresh token to invalidate it
-                        
-                user.logged_in = False
-                user.save()
-                
-                print("User logged out and starting to blacklist token")
-                if TokenUtil.is_token_valid(token):
-                    TokenUtil.blacklist_token(token)
-                    
-                    return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'message': 'Logout successful.'}, status=status.HTTP_200_OK)
             else:
-                return Response("User is not logged in!", status=status.HTTP_400_BAD_REQUEST)
-        
+                return Response({'message': 'Invalid access token or expired access token'}, status=status.HTTP_401_UNAUTHORIZED)
+
         except ObjectDoesNotExist:
             return Response("User does not exist!", status=status.HTTP_404_NOT_FOUND)
 
@@ -824,8 +817,11 @@ class GetUserDetails(APIView):
 
         # Generate a new access token
         user = User.objects.get(id=user_id)
-
+        
         serializer = GetUserDetailsSerializer(user)
+        
+        if user and user.role == 'student':
 
             
+            pass
         return Response(serializer.data)

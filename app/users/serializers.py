@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserGoogleSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email','name','profile_image','thumbnail_profile_image','login_type','device_id','logged_in','role','branch','semester','division','admission_no','register_no','image_url', 'thumbnail_url']
+        fields = ['email','name','profile_image','thumbnail_profile_image','login_type','device_id','role','branch','semester','division','admission_no','register_no','image_url', 'thumbnail_url']
 
 class EmailSerializer(serializers.Serializer):
     email = serializers.EmailField()

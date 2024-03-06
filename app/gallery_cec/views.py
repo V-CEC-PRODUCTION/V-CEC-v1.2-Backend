@@ -12,6 +12,11 @@ from celery import shared_task
 from django.core.cache import cache
 import time, random, json,string, os, cv2, numpy as np
 from vcec_bk.pagination import CustomPageNumberPagination
+from azure.storage.blob import BlobServiceClient, ContentSettings
+
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 @shared_task
 def calculate_frame_score(frame):
@@ -151,19 +156,27 @@ def post_file(request):
             
             
             # Generate and save the thumbnail
-            # if media_instance.image:
-                img = PilImage.open(media_instance.media_file.path)
+            if media_instance.media_file:
+                img = PilImage.open(BytesIO(media_instance.media_file.read()))
                 img.thumbnail((100, 100))
                 thumb_io = BytesIO()
                 img.save(thumb_io, format='JPEG')
+                thumb_io.seek(0)
 
                 # Generate a unique filename for the thumbnail
                 timestamp = int(time.time())
                 random_string = ''.join(random.choices(string.ascii_letters, k=6))
                 unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
 
-                thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
-                media_instance.thumbnail.save(unique_filename, thumbnail, save=True)
+                folder_name = "thumbnails"
+                
+                blob_media_name = f"gallery/cec/{folder_name}/{unique_filename}"
+            
+                blob_client = blob_service_client.get_blob_client(container="media", blob=blob_media_name)
+                blob_client.upload_blob(thumb_io, content_settings=ContentSettings(content_type='image/jpeg'))
+
+                media_instance.thumbnail = blob_media_name
+                media_instance.save()
                 
         elif media_file.content_type.startswith('video'):
             

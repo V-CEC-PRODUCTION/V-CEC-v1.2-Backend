@@ -1,4 +1,10 @@
 from django.db import models
+from azure.storage.blob import BlobServiceClient, BlobClient, ContentSettings
+import os
+
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 class FileStore(models.Model):
     media_file = models.FileField(upload_to='gallery/cec/images/')
@@ -12,9 +18,9 @@ class FileStore(models.Model):
 
     def save(self, *args, **kwargs):
         if self.media_file:
-            self.media_url = f"gallery/cec/api/media/{self.id}/file/"
+            self.media_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.media_file.name}"
         if self.thumbnail:
-            self.thumbnail_url = f"gallery/cec/api/media/{self.id}/thumbnail/"
+            self.thumbnail_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.thumbnail.name}"
         
 
         super().save(*args, **kwargs)
@@ -32,7 +38,7 @@ class VideoStore(models.Model):
 
     def save(self, *args, **kwargs):
         if self.video_file:
-            self.video_url = f"gallery/cec/api/media/files/video/{self.id}"
+            self.video_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.video_file.name}"
 
         super().save(*args, **kwargs)
 

@@ -193,7 +193,24 @@ class GetCurrentCode(APIView):
                     return Response({"result": serializer.data,"thumbnail_url": user.thumbnail_url, "image_thumbnail_url": user.image_url, "name": user.name}, status=status.HTTP_200_OK)
             
             else:   
-                return Response({"result": "","thumbnail_url": user.thumbnail_url, "image_thumbnail_url": user.image_url, "name": user.name}, status=status.HTTP_200_OK)
+                return Response({"result": [
+        {
+            "firstcode": "",
+            "secondcode": "",
+            "thirdcode": "",
+            "fourthcode": "",
+            "fifthcode": "",
+            "sixthcode": "",
+            "firsttime": "",
+            "secondtime": "",
+            "thirdtime": "",
+            "fourthtime": "",
+            "fifthtime": "",
+            "sixthtime": "",
+            "currentcode": "",
+            "currenttime": ""
+        }
+    ],"thumbnail_url": user.thumbnail_url, "image_thumbnail_url": user.image_url, "name": user.name}, status=status.HTTP_200_OK)
             
         except TimeTable.DoesNotExist:
             return Response({"status": "Timetables not found"}, status=status.HTTP_404_NOT_FOUND)

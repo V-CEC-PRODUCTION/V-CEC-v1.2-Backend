@@ -1,5 +1,10 @@
 from django.db import models
+from azure.storage.blob import BlobServiceClient, BlobClient, ContentSettings
 import os
+
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 class AddForum(models.Model):
     forum_name = models.CharField(max_length=100)
@@ -21,21 +26,30 @@ class AddForum(models.Model):
                 # Delete the old image file
                 if existing_instance.forum_image:
                     path = existing_instance.forum_image.path
-                    if os.path.isfile(path):
-                        os.remove(path)
+                    try:
+                        blob_service_client.delete_blob('media', f"{existing_instance.forum_image.name}")
+        
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
                         
-                        
+
+                                        
+                                        
             if existing_instance.thumbnail_forum_image != self.thumbnail_forum_image:
                 # Delete the old image file
                 if existing_instance.thumbnail_forum_image:
                     path = existing_instance.thumbnail_forum_image.path
-                    if os.path.isfile(path):
-                        os.remove(path)
+                    try:
+                        blob_service_client.delete_blob('media', f"{existing_instance.thumbnail_forum_image.name}")
+        
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+                   
 
         if self.forum_image:
-            self.image_url = f"forum/management/images/{self.id}/file/"
+            self.image_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.forum_image.name}"
         if self.thumbnail_forum_image:
-            self.thumbnail_url = f"forum/management/thumbnails/{self.id}/thumbnail/"
+            self.thumbnail_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.thumbnail_forum_image.name}"
 
         super(AddForum, self).save(*args, **kwargs)
 
