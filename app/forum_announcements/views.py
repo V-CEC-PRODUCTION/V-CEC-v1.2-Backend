@@ -12,48 +12,63 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from .models import create_dynamic_model,forumAnnouncements
 from django.db import connection
 # Create your views here.
-import json
+import json, os
 from vcec_bk.pagination import CustomPageNumberPagination
 from django.core.cache import cache
 from users.utils import Token, TokenUtil
 from users.models import User
 from forum_management.models import AddForum
+from azure.storage.blob import BlobServiceClient, ContentSettings
+
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 @api_view(['POST'])
 def create_announcement(request):
-    serializer=FormSerializer(data=request.data)
-    
-    if serializer.is_valid():
-        serializer_instance=serializer.save()
-        if not (serializer_instance.button_name and serializer_instance.button_link):
-            serializer_instance.button_name=''
-            serializer_instance.button_link=''
-        serializer_instance.save()
+    try:
+        serializer=FormSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            announcement_instance=serializer.save()
+            if not (announcement_instance.button_name and announcement_instance.button_link):
+                announcement_instance.button_name=''
+                announcement_instance.button_link=''
+                
+            if announcement_instance.poster_image:
+                img = PilImage.open(BytesIO(announcement_instance.poster_image.read()))
+                img.thumbnail((100, 100))
+                thumb_io = BytesIO()
+                img.save(thumb_io, format='JPEG')
+                thumb_io.seek(0)
+
+                # Generate a unique filename for the thumbnail
+                timestamp = int(time.time())
+                random_string = ''.join(random.choices(string.ascii_letters, k=6))
+                unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
+
+                folder_name = "thumbnails"
+                
+                blob_media_name = f"forum/announcements/{folder_name}/{unique_filename}"
             
+                blob_client = blob_service_client.get_blob_client(container="media", blob=blob_media_name)
+                blob_client.upload_blob(thumb_io, content_settings=ContentSettings(content_type='image/jpeg'))
 
-        img = PilImage.open(serializer_instance.poster_image.path)
-        img.thumbnail((100, 100))
-        thumb_io = BytesIO()
-        img.save(thumb_io, format='JPEG')
-
-        # Generate a unique filename for the thumbnail
-        timestamp = int(time.time())
-        random_string = ''.join(random.choices(string.ascii_letters, k=6))
-        unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
-
-        thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
-        serializer_instance.thumbnail_poster_image.save(unique_filename, thumbnail, save=True)
-        
-        model_name ="forum_announcements" + '_'+str(serializer_instance.id)+'_likes'
-        
-        announcement_cache_name = "forum_announcements*"
-        
-        cache.delete_pattern(announcement_cache_name)
-        
-        if create_dynamic_model(model_name,serializer_instance.id):
-            return Response(serializer.data,status.HTTP_200_OK)
-    else:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+                announcement_instance.thumbnail_poster_image = blob_media_name
+                announcement_instance.save()
+            
+                model_name ="forum_announcements" + '_'+str(announcement_instance.id)+'_likes'
+                
+                announcement_cache_name = "forum_announcements*"
+                
+                cache.delete_pattern(announcement_cache_name)
+                
+                if create_dynamic_model(model_name,announcement_instance.id):
+                    return Response(serializer.data,status.HTTP_200_OK)
+        else:
+            return Response({"error": serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetLikesAnnouncementInd(APIView):
     def get(self,request):
@@ -117,6 +132,18 @@ def delete_announcement(request,pk):
     except ob.DoesNotExist:
         return Response({"error": "Image not found."}, status=404)
     
+    try:
+        blob_service_client.delete_blob('media', f"{ob.poster_image.name}")
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
+    try:
+        blob_service_client.delete_blob('media', f"{ob.thumbnail_poster_image.name}")
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
     if ob.poster_image:
         ob.poster_image.delete()
     if ob.thumbnail_poster_image:

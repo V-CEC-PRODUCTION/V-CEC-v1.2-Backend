@@ -1,10 +1,15 @@
 from django.db import models, connection
 from users.models import User
+from azure.storage.blob import BlobServiceClient, BlobClient, ContentSettings
+import os
 
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 class forumAnnouncements(models.Model):
     title = models.TextField(blank=True)
     content = models.TextField(blank=True,null=True)
-    poster_image = models.ImageField(upload_to='forum/announcements/posters/',blank=True)
+    poster_image = models.ImageField(upload_to='forum/announcements/images/',blank=True)
     poster_image_url = models.TextField(blank=True,null=True)
     thumbnail_poster_image = models.ImageField(upload_to='forum/announcements/thumbnails/', blank=True, null=True) 
     thumbnail_poster_image_url = models.TextField(blank=True,null=True) 
@@ -17,9 +22,9 @@ class forumAnnouncements(models.Model):
     
     def save(self, *args, **kwargs):
         if self.poster_image:
-            self.poster_image_url = f"forum/announcements/cec/api/announcements/{self.id}/file/"
+            self.poster_image_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.poster_image.name}"
         if self.thumbnail_poster_image:
-            self.thumbnail_poster_image_url = f"forum/announcements/cec/api/announcements/{self.id}/thumbnail/"
+            self.thumbnail_poster_image_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.thumbnail_poster_image.name}"
 
         super().save(*args, **kwargs)
     

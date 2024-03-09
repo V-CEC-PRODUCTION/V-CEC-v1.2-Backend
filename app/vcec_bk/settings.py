@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'channels',
     'channels_postgres',
-    'daphne',
+    # 'daphne',
     'storages',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -193,7 +193,7 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-ASGI_APPLICATION = "vcec_bk.routing.application"
+# ASGI_APPLICATION = "vcec_bk.routing.application"
 
 # Celery settings
 CELERY_BROKER_URL = f'rediss://:{os.environ.get("REDIS_PASSWORD")}@{os.environ.get("REDIS_LOCATION")}:{os.environ.get("REDIS_PORT")}' + \
