@@ -24,7 +24,11 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render
 from django.core.cache import cache
+from azure.storage.blob import BlobServiceClient, ContentSettings
 
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 def generate_token(user_id, email):
     # Set the expiration time for the token (e.g., 1 hour from now)
@@ -306,14 +310,22 @@ class UpdateProfilePhotoUser(APIView):
             
             user = User.objects.get(id=user_id)
             
-            # Check if there's an existing profile image
-            if user.profile_image:
-                # Delete existing profile image and thumbnail
-                delete_file(user.profile_image.path)
+            try:
+                blob_service_client.delete_blob('media', f"{user.profile_image.name}")
                 
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                
+            try:
+                blob_service_client.delete_blob('media', f"{user.thumbnail_profile_image.name}")
+                
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                    
+            if user.profile_image:
+                user.profile_image.delete()
             if user.thumbnail_profile_image:
-                delete_file(user.thumbnail_profile_image.path)
-
+                user.thumbnail_profile_image.delete()
             
             serializer = UserImageSerializer(instance=user,data=request.data)
             
@@ -323,18 +335,26 @@ class UpdateProfilePhotoUser(APIView):
                 image_instance = serializer.save()
                 
                 if image_instance.profile_image:
-                    img = PilImage.open(image_instance.profile_image.path)
+                    img = PilImage.open(BytesIO(image_instance.profile_image.read()))
                     img.thumbnail((100, 100))
                     thumb_io = BytesIO()
                     img.save(thumb_io, format='JPEG')
+                    thumb_io.seek(0)
 
                     # Generate a unique filename for the thumbnail
                     timestamp = int(time.time())
                     random_string = ''.join(random.choices(string.ascii_letters, k=6))
                     unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
 
-                    thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
-                    image_instance.thumbnail_profile_image.save(unique_filename, thumbnail, save=True)
+                    folder_name = "thumbnails"
+                    
+                    blob_media_name = f"users/{folder_name}/{unique_filename}"
+                
+                    blob_client = blob_service_client.get_blob_client(container="media", blob=blob_media_name)
+                    blob_client.upload_blob(thumb_io, content_settings=ContentSettings(content_type='image/jpeg'))
+
+                    image_instance.thumbnail = blob_media_name
+                    image_instance.save()
                     
                     event_cache_name = "forum_events*"
         
