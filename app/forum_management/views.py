@@ -13,7 +13,12 @@ from users.serializers import UserGoogleSerializer
 from forum_stories.models import UserCountStories
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.exceptions import ObjectDoesNotExist
-import random, string, time, jwt, json
+import random, string, time, jwt, json, os, io
+from azure.storage.blob import BlobServiceClient, ContentSettings
+
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 
 class CreateForum(APIView):
@@ -25,21 +30,26 @@ class CreateForum(APIView):
                         # Generate and save the thumbnail
                         
             if image_instance.forum_image:
-                img = PilImage.open(image_instance.forum_image.path)
-                img = img.convert('RGB')
+                img = PilImage.open(BytesIO(image_instance.forum_image.read()))
                 img.thumbnail((100, 100))
                 thumb_io = BytesIO()
                 img.save(thumb_io, format='JPEG')
+                thumb_io.seek(0)
 
                 # Generate a unique filename for the thumbnail
                 timestamp = int(time.time())
                 random_string = ''.join(random.choices(string.ascii_letters, k=6))
                 unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
 
-                thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
-                image_instance.thumbnail_forum_image.save(unique_filename, thumbnail, save=True)
+                folder_name = "thumbnails"
                 
-                
+                blob_media_name = f"forum/management/{folder_name}/{unique_filename}"
+            
+                blob_client = blob_service_client.get_blob_client(container="media", blob=blob_media_name)
+                blob_client.upload_blob(thumb_io, content_settings=ContentSettings(content_type='image/jpeg'))
+
+                image_instance.thumbnail = blob_media_name
+                image_instance.save()
                 
             email_db = User.objects.filter(email=data['email_id'], login_type='google').first()
             
@@ -94,27 +104,90 @@ class UpdateForumImage(APIView):
             return Response({"message": "Record not found."},status=status.HTTP_404_NOT_FOUND)
         
         if ob:
+            if request.data.get('forum_image'):
+                if ob.forum_image:
+                    path = ob.forum_image.name
+                    
+                    print(f"Path: {path}")
+                    try:
+                        blob_client = blob_service_client.get_blob_client(container="media", blob=f"{ob.forum_image.name}")
+
+                        # Delete the blob
+                        blob_client.delete_blob()
+                        
+        
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+
+                if ob.thumbnail_forum_image:
+                    
+                    try:
+                        blob_client = blob_service_client.get_blob_client(container="media", blob=f"{ob.thumbnail_forum_image.name}")
+
+                        # Delete the blob
+                        blob_client.delete_blob()
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+                        
             serializer = ForumImageSerializer(ob, data=request.data)
             
             if serializer.is_valid():
-                serializer.save()
+                image_file = request.data.get('forum_image')
                 
-                if ob.forum_image:
-                    img = PilImage.open(ob.forum_image.path)
+                # Open the image using PIL
+                img = PilImage.open(image_file)
+                
+                # Convert the image to RGB mode if it has an alpha channel (RGBA)
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
+                
+                # Create an in-memory stream to save the image
+                image_io = io.BytesIO()
+                
+                # Save the image as JPEG to the in-memory stream
+                img.save(image_io, format='JPEG')
+                image_io.seek(0)
+                
+                timestamp = int(time.time())
+                random_string = ''.join(random.choices(string.ascii_letters, k=6))
+                unique_filename = f"{timestamp}_{random_string}.jpg"
+                
+                uploaded_file = InMemoryUploadedFile(image_io, None, unique_filename, 'image/jpeg', image_io.getbuffer().nbytes, None)
+                
+                
+                serializer.validated_data['forum_image'] = uploaded_file
+                
+                
+                image_instance = serializer.save()
+                
+                if image_instance.forum_image:
+                    img = PilImage.open(BytesIO(image_instance.forum_image.read()))
+                    
+                    if img.mode == 'RGBA':
+                        img = img.convert('RGB')
                     img.thumbnail((100, 100))
                     thumb_io = BytesIO()
                     img.save(thumb_io, format='JPEG')
+                    thumb_io.seek(0)
 
                     # Generate a unique filename for the thumbnail
                     timestamp = int(time.time())
                     random_string = ''.join(random.choices(string.ascii_letters, k=6))
                     unique_filename = f"{timestamp}_{random_string}_thumbnail.jpg"
 
-                    thumbnail = InMemoryUploadedFile(thumb_io, None, unique_filename, 'image/jpeg', None, None)
-                    ob.thumbnail_forum_image.save(unique_filename, thumbnail, save=True)
+                    folder_name = "thumbnails"
                     
+                    blob_media_name = f"forum/management/{folder_name}/{unique_filename}"
                 
-                return Response({"message": "Record Updated successfully."},status=status.HTTP_200_OK)
+                    blob_client = blob_service_client.get_blob_client(container="media", blob=blob_media_name)
+                    blob_client.upload_blob(thumb_io, content_settings=ContentSettings(content_type='image/jpeg'))
+
+                    image_instance.thumbnail_forum_image = blob_media_name
+                    image_instance.save()
+                
+                    return Response({"message": "Record Updated successfully."},status=status.HTTP_200_OK)
+            else:
+                return Response({"error": serializer.errors},status=status.HTTP_400_BAD_REQUEST)
             
             return Response({"message": "Record not Updated."},status=status.HTTP_400_BAD_REQUEST)
         
@@ -171,6 +244,18 @@ class DeleteForum(APIView):
             
             if forum:
                 forum.delete()
+                
+            try:
+                blob_service_client.delete_blob('media', f"{ob.forum_image.name}")
+                
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                
+            try:
+                blob_service_client.delete_blob('media', f"{ob.thumbnail_forum_image.name}")
+                
+            except Exception as e:
+                print(f"An error occurred: {e}")
                 
             if ob.forum_image:
                 ob.forum_image.delete()

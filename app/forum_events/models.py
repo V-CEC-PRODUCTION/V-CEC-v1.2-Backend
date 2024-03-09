@@ -1,11 +1,16 @@
 from django.db import models, connection
+from azure.storage.blob import BlobServiceClient, BlobClient, ContentSettings
+import os
 
+connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
+
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 
 class forumEvents(models.Model):
     title = models.TextField()
     content = models.TextField(blank=True,null=True)
-    poster_image = models.ImageField(upload_to='forum/events/posters/')
+    poster_image = models.ImageField(upload_to='forum/events/images/')
     poster_image_url=models.TextField(blank=True,null=True) 
     thumbnail_poster_image = models.ImageField(upload_to='forum/events/thumbnails/', blank=True, null=True) 
     thumbnail_poster_image_url=models.TextField(blank=True,null=True) 
@@ -20,9 +25,9 @@ class forumEvents(models.Model):
         
     def save(self, *args, **kwargs):
         if self.poster_image:
-            self.poster_image_url = f"forum/events/cec/api/events/{self.id}/file/"
+            self.poster_image_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.poster_image.name}"
         if self.thumbnail_poster_image:
-            self.thumbnail_poster_image_url = f"forum/events/cec/api/events/{self.id}/thumbnail/"
+            self.thumbnail_poster_image_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.thumbnail_poster_image.name}"
 
         super().save(*args, **kwargs)
     
@@ -48,8 +53,13 @@ class LikeEvent(models.Model):
 
 
     
-def create_dynamic_models(model_names):
-    base_models = [LikeEvent, Registration]
+def create_dynamic_models(model_names,form):
+    
+    if form == 'vcec_form':
+        
+        base_models = [LikeEvent, Registration]
+    else:
+        base_models = [LikeEvent]
 
     for base_model, new_model_name in zip(base_models, model_names):
         # Check if the new model name is a valid identifier
@@ -74,9 +84,9 @@ def create_dynamic_models(model_names):
             schema_editor.create_model(dynamic_model)
 
 
-def create_tables(app_name,unique_id):
+def create_tables(app_name,unique_id,form):
     model_names = [app_name +"_"+ str(unique_id)+'_likes', app_name+"_"+str(unique_id)+'_registration']
-    create_dynamic_models(model_names)
+    create_dynamic_models(model_names,form)
 # def create_like_event_model(event):
 #     class_name = f'LikeEvent{event.id}'
 #     return type(class_name, (LikeEvent,), {

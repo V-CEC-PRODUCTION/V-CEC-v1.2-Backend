@@ -106,7 +106,10 @@ def delete_file(request, pk):
         image = FileStore.objects.get(pk=pk)
     except FileStore.DoesNotExist:
         return Response({"error": "FileStore not found."}, status=404)
-    
+
+
+        
+       
     if image.tag == 'vid':
         try:
             video = VideoStore.objects.get(fid=pk)
@@ -115,9 +118,29 @@ def delete_file(request, pk):
             return Response({"error": "VideoStore not found."}, status=404)
         
         if video.video_file:
-            video.video_file.delete()
-        video.delete()
+              
+            try:
+                blob_service_client.delete_blob('media', f"{video.video_file.name}")
+                
+            except Exception as e:
+                print(f"An error occurred: {e}")
         
+            video.video_file.delete()
+
+        video.delete()
+
+    try:
+        blob_service_client.delete_blob('media', f"{image.image.name}")
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
+    try:
+        blob_service_client.delete_blob('media', f"{image.thumbnail.name}")
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+               
     if image.media_file:
         print("media file deleted")
         image.media_file.delete()

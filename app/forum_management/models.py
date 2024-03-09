@@ -20,31 +20,7 @@ class AddForum(models.Model):
 
         
     def save(self, *args, **kwargs):
-        if self.pk:
-            existing_instance = AddForum.objects.get(pk=self.pk)
-            if existing_instance.forum_image != self.forum_image:
-                # Delete the old image file
-                if existing_instance.forum_image:
-                    path = existing_instance.forum_image.path
-                    try:
-                        blob_service_client.delete_blob('media', f"{existing_instance.forum_image.name}")
         
-                    except Exception as e:
-                        print(f"An error occurred: {e}")
-                        
-
-                                        
-                                        
-            if existing_instance.thumbnail_forum_image != self.thumbnail_forum_image:
-                # Delete the old image file
-                if existing_instance.thumbnail_forum_image:
-                    path = existing_instance.thumbnail_forum_image.path
-                    try:
-                        blob_service_client.delete_blob('media', f"{existing_instance.thumbnail_forum_image.name}")
-        
-                    except Exception as e:
-                        print(f"An error occurred: {e}")
-                   
 
         if self.forum_image:
             self.image_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/media/{self.forum_image.name}"
