@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'users',
+    'cecify',
     'notices',
     'homepage_images',
     'staff_info',
