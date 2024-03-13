@@ -19,7 +19,7 @@ class RadioSeasonDetails(models.Model):
 class RadioEpisodesDetails(models.Model):
     season = models.ForeignKey(RadioSeasonDetails, on_delete=models.CASCADE)
     season_number = models.IntegerField(default=0,blank=False, null=False)
-    episode = models.IntegerField(unique=True, blank=False, null=False)  
+    episode = models.IntegerField(blank=False, null=False)  
     content = models.TextField(blank=False, null=False)
     image = models.ImageField(upload_to='cecify/radio/episodes/images/', blank=False, null=False)
     thumbnail = models.ImageField(upload_to='cecify/radio/episodes/thumbnails/', blank=True, null=True)
@@ -29,6 +29,10 @@ class RadioEpisodesDetails(models.Model):
     youtube_url = models.TextField(default='',blank=True, null=True)
     google_podcast_url = models.TextField(default='',blank=True, null=True)
     upload_time = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+
+        unique_together = ['episode', 'season_number']
     
     def save(self, *args, **kwargs):
         if self.image:
