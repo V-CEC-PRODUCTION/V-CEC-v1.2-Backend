@@ -28,7 +28,7 @@ class SeasonFilterMethods(APIView):
 class SeasonDetails(APIView):
     def get(self, request):
         try:
-            seasons = RadioSeasonDetails.objects.all()
+            seasons = RadioSeasonDetails.objects.order_by('-season')
             serializer = RadioSeasonDetailsSerializer(seasons, many=True)
             return Response({"season_result":serializer.data}, status=status.HTTP_200_OK)
         except Exception as e:
