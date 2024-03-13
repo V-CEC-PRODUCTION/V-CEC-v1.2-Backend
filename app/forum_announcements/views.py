@@ -221,13 +221,16 @@ class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
             
             if announcements_cache_result is None:
                 
-                if forum == "all":
-                    
-                    announcements = forumAnnouncements.objects.all().order_by('-publish_date')
-                    
-                elif forum != "all":
-                    announcements = forumAnnouncements.objects.filter(published_by__contains=forum).order_by('-publish_date')
-                    
+                try:
+                    if(forum == "all" or forum is None):
+                        
+                        announcements = forumAnnouncements.objects.all().order_by('-publish_date')
+                        
+                    elif forum != "all":
+                        announcements = forumAnnouncements.objects.filter(published_by__contains=forum).order_by('-publish_date')
+                except Exception as e:
+                    return Response( f"An error occurred: {str(e)}")
+                
                 self.paginate_queryset(announcements, request)
                 serializer = FormGetSerializer(announcements, many=True)
                 

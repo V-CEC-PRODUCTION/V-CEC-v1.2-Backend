@@ -1,5 +1,5 @@
 from django.db import models
-from azure.storage.blob import BlobServiceClient, BlobClient, ContentSettings
+from azure.storage.blob import BlobServiceClient
 import os
 
 connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
