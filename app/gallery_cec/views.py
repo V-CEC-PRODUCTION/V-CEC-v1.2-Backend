@@ -301,6 +301,7 @@ class get_all_files(APIView, CustomPageNumberPagination):
         gallery_files = f'gallery_files_{page_number}_{page_count}'
         
         gallery_files_result = cache.get(gallery_files)
+        
         # gallery_files_result = None    
         if gallery_files_result is None:
             
