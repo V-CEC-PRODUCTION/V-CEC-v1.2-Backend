@@ -278,8 +278,6 @@ class DeleteEvent(APIView):
         
         if ob.register_button_link=='vcec_form':
             
-            ob.delete()
-            
             try:
                 cursor= connection.cursor()
                 for table_name in tables:
@@ -290,11 +288,12 @@ class DeleteEvent(APIView):
             except Exception as e:
                 return Response( f"An error occurred: {str(e)}")
         else:
-            ob.delete()
-            
+   
             cursor=connection.cursor()
             cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
-
+         
+        ob.delete()
+            
         connection.close()
         
         event_cache_name = "forum_events*"
