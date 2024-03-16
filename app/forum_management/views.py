@@ -127,8 +127,6 @@ class CreateForum(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)                   
                 
-        return Response({"message": "Record not Added."},status=status.HTTP_400_BAD_REQUEST)
-    
 class UpdateForumImage(APIView):
     def put(self, request, pk):
         try:
