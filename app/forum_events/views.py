@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from PIL import Image as PilImage
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from .serializers import FormSerializer,FormGetSerializer
+from .serializers import FormSerializer,FormGetSerializer,FormUpdateSerializer
 import time,random ,string
 from .models import create_tables,forumEvents,create_dynamic_models
 from django.db import connection
@@ -20,6 +20,7 @@ from users.models import User, Token
 from users.utils import TokenUtil
 from forum_management.models import AddForum
 from azure.storage.blob import BlobServiceClient, ContentSettings
+
 
 connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
 
@@ -74,7 +75,7 @@ def create_event(request):
         
         return Response(serializer.data,status.HTTP_200_OK)
     else:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response({"serializer":serializer.errors},status=status.HTTP_400_BAD_REQUEST)
 
 class GetLikesEventInd(APIView):
     def get(self,request):
@@ -327,7 +328,8 @@ class GetEventAnalysis(APIView):
 @api_view(['PUT'])
 def update_event(request,id):
 
-    serializer=FormSerializer(data=request.data)
+
+    serializer = FormUpdateSerializer(data=request.data,partial=True)
     cur=connection.cursor()    
     
     if serializer.is_valid():
@@ -365,7 +367,7 @@ def update_event(request,id):
     else:
         cur.close()
         connection.close()
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({"message":"Serializer Error","Serializer Error":serializer.errors},status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET'])
 def image_file(request, pk):
