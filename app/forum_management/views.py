@@ -25,12 +25,41 @@ class CreateForum(APIView):
     def post(delf,request):
         data = request.data.copy()
         serializer = ForumSerializer(data=request.data)
+        
         if serializer.is_valid():
+            image_file = request.data.get('forum_image')
+            
+            # Open the image using PIL
+            img = PilImage.open(image_file)
+            
+            # Convert the image to RGB mode if it has an alpha channel (RGBA)
+            if img.mode == 'RGBA':
+                img = img.convert('RGB')
+            
+            # Create an in-memory stream to save the image
+            image_io = io.BytesIO()
+            
+            # Save the image as JPEG to the in-memory stream
+            img.save(image_io, format='JPEG')
+            image_io.seek(0)
+            
+            timestamp = int(time.time())
+            random_string = ''.join(random.choices(string.ascii_letters, k=6))
+            unique_filename = f"{timestamp}_{random_string}.jpg"
+            
+            uploaded_file = InMemoryUploadedFile(image_io, None, unique_filename, 'image/jpeg', image_io.getbuffer().nbytes, None)
+            
+            
+            serializer.validated_data['forum_image'] = uploaded_file
+            
+            
             image_instance = serializer.save()
-                        # Generate and save the thumbnail
-                        
+            
             if image_instance.forum_image:
                 img = PilImage.open(BytesIO(image_instance.forum_image.read()))
+                
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
                 img.thumbnail((100, 100))
                 thumb_io = BytesIO()
                 img.save(thumb_io, format='JPEG')
@@ -48,7 +77,7 @@ class CreateForum(APIView):
                 blob_client = blob_service_client.get_blob_client(container="media", blob=blob_media_name)
                 blob_client.upload_blob(thumb_io, content_settings=ContentSettings(content_type='image/jpeg'))
 
-                image_instance.thumbnail = blob_media_name
+                image_instance.thumbnail_forum_image = blob_media_name
                 image_instance.save()
                 
             email_db = User.objects.filter(email=data['email_id'], login_type='google').first()
@@ -72,28 +101,32 @@ class CreateForum(APIView):
                 roles_list = list(roles)
 
                 converted_data = {item['forum_role_name']: 0 for item in roles_list}
+                
+                try:
+                    user_count_stories_instance = UserCountStories(user_id=user_instance, count=json.dumps(converted_data))
 
-                user_count_stories_instance = UserCountStories(user_id=user_instance, count=json.dumps(converted_data))
-
-                # Save the UserCountStories instance to store the JSON data
-                user_count_stories_instance.save()
-                
-                user_stories_count = UserCountStories.objects.all()
-                
-                
-                if user_stories_count:
+                    # Save the UserCountStories instance to store the JSON data
+                    user_count_stories_instance.save()
                     
-                    for record in user_stories_count:
+                    user_stories_count = UserCountStories.objects.all()
+                    
+                    
+                    if user_stories_count:
                         
-                        
-                        record.count = json.dumps(converted_data)
-                        record.save()
+                        for record in user_stories_count:
+                            
+                            
+                            record.count = json.dumps(converted_data)
+                            record.save()
+                except Exception as e:
+                    print(f"An error occurred: {e}")
                 
+                return Response({'message': 'Record added successfully.'}, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                             
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)                   
                 
-            return Response({"message": "Record Added successfully."},status=status.HTTP_200_OK)
         return Response({"message": "Record not Added."},status=status.HTTP_400_BAD_REQUEST)
     
 class UpdateForumImage(APIView):
