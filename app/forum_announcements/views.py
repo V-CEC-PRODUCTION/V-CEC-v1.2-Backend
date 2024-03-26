@@ -89,6 +89,16 @@ class GetLikesAnnouncementInd(APIView):
         
         except Exception as e:
             return Response( f"An error occurred: {str(e)}")
+        
+class GetAnnouncementAllSuperAdmin(APIView):
+    def get(self,request):
+        try:
+            announcement_instance = forumAnnouncements.objects.all().order_by('-publish_date')
+            serializer = FormGetSerializer(announcement_instance, many=True)
+            return Response({"announcement_result":serializer.data},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response( f"An error occurred: {str(e)}")
+        
 @api_view(['PUT'])
 def update_announcement(request,id):
 
