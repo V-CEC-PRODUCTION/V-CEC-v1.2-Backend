@@ -2,12 +2,12 @@ from django.db import models
 
 # Create your models here.
 class TimeTable(models.Model):
-    firstcode=models.TextField()
-    secondcode=models.TextField()
-    thirdcode=models.TextField()
-    fourthcode=models.TextField()
-    fifthcode=models.TextField()
-    sixthcode=models.TextField()
+    firstcode=models.TextField(null=True)
+    secondcode=models.TextField(null=True)
+    thirdcode=models.TextField(null=True)
+    fourthcode=models.TextField(null=True)
+    fifthcode=models.TextField(null=True)
+    sixthcode=models.TextField(null=True)
     firsttime=models.TextField(default='09:00 AM-10:00 AM')
     secondtime=models.TextField(default='10:00 AM-11:00 AM')
     thirdtime=models.TextField(default='11:00 AM-12:00 PM')

@@ -27,13 +27,14 @@ blob_service_client = BlobServiceClient.from_connection_string(connection_string
 @api_view(['POST'])
 def create_announcement(request):
     try:
+        
         serializer=FormSerializer(data=request.data)
         
         if serializer.is_valid():
             announcement_instance=serializer.save()
-            if not (announcement_instance.button_name and announcement_instance.button_link):
-                announcement_instance.button_name=''
-                announcement_instance.button_link=''
+            # if not (announcement_instance.button_name and announcement_instance.button_link):
+            #     announcement_instance.button_name=''
+            #     announcement_instance.button_link=''
                 
             if announcement_instance.poster_image:
                 img = PilImage.open(BytesIO(announcement_instance.poster_image.read()))

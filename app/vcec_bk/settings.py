@@ -324,31 +324,6 @@ USE_I18N = True
 USE_TZ = False
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-# STORAGES = {
-#     "default": {
-#         "BACKEND": "storages.backends.azure_storage.AzureStorage",
-#         "OPTIONS": {
-#             "account_name": "vcecmediavault",
-#             "account_key": "",
-#             "AZURE_CONTAINER": {
-#                 "container1": {
-#                     "container": "media",
-#                     "public_access": "public|private",  # Choose the appropriate access level
-#                     # Add other container-specific options here
-#                 },
-#                 "container2": {
-#                     "container": "static",
-#                     "public_access": "public|private",  # Choose the appropriate access level
-#                     # Add other container-specific options here
-#                 },
-#                 # Add more containers as needed
-#             },
-#         },
-#     },
-# }
-# STATIC_URL = 'static/'
 DEFAULT_FILE_STORAGE = 'vcec_bk.azure_storages.AzureMediaStorage'
 STATICFILES_STORAGE = 'vcec_bk.azure_storages.AzureStaticStorage'
 
