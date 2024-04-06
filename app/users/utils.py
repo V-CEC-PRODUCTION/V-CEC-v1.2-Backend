@@ -37,7 +37,7 @@ class TokenUtil:
         payload = {
             'id': user.id,
             'exp': datetime.now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRATION),
-            'iat': datetime.now(),
+            'iat': datetime.now().timestamp(),
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
     
@@ -78,7 +78,7 @@ class TokenUtil:
         payload = {
             'id': user.id,
             'exp': datetime.now() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION),
-            'iat': datetime.now(),
+            'iat': datetime.now().timestamp(),
         }
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
 
@@ -88,7 +88,7 @@ class TokenUtil:
             token_value = Token.objects.filter(access_token=token)
             if token_value:
                 
-                # jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
                 return True
             else:
                 return False
@@ -102,7 +102,7 @@ class TokenUtil:
             if token_value:
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
                 exp = payload.get('exp')
-                if datetime.utcnow() > datetime.fromtimestamp(exp):
+                if datetime.now() > datetime.fromtimestamp(exp):
                     return True
                 else:
                     return False
