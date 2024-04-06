@@ -12,6 +12,7 @@ from django.core.cache import cache
 import time, random, string , json, os
 from vcec_bk.pagination import CustomPageNumberPagination
 from azure.storage.blob import BlobServiceClient, BlobClient, ContentSettings
+import io
 
 connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
 
@@ -22,11 +23,39 @@ def create_image(request):
     try:
         serializer = ImageSerializer(data=request.data)
         if serializer.is_valid():
+            image_file = request.data.get('image')
+            
+            # Open the image using PIL
+            img = PilImage.open(image_file)
+            
+            # Convert the image to RGB mode if it has an alpha channel (RGBA)
+            if img.mode == 'RGBA':
+                img = img.convert('RGB')
+            
+            # Create an in-memory stream to save the image
+            image_io = io.BytesIO()
+            
+            # Save the image as JPEG to the in-memory stream
+            img.save(image_io, format='JPEG')
+            image_io.seek(0)
+            
+            timestamp = int(time.time())
+            random_string = ''.join(random.choices(string.ascii_letters, k=6))
+            unique_filename = f"{timestamp}_{random_string}.jpg"
+            
+            uploaded_file = InMemoryUploadedFile(image_io, None, unique_filename, 'image/jpeg', image_io.getbuffer().nbytes, None)
+            
+            
+            serializer.validated_data['image'] = uploaded_file
+            
+            
             image_instance = serializer.save()
             
-            # Generate and save the thumbnail
             if image_instance.image:
                 img = PilImage.open(BytesIO(image_instance.image.read()))
+                
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
                 img.thumbnail((100, 100))
                 thumb_io = BytesIO()
                 img.save(thumb_io, format='JPEG')
@@ -40,18 +69,20 @@ def create_image(request):
                 folder_name = "thumbnails"
                 
                 blob_media_name = f"homepage_images/{folder_name}/{unique_filename}"
-               
+            
                 blob_client = blob_service_client.get_blob_client(container="media", blob=blob_media_name)
                 blob_client.upload_blob(thumb_io, content_settings=ContentSettings(content_type='image/jpeg'))
 
                 image_instance.thumbnail = blob_media_name
                 image_instance.save()
+            
 
                 homepage_images = 'homepage_images*'
                 cache.delete_pattern(homepage_images)
                 
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     except Exception as e:
         print(e)
