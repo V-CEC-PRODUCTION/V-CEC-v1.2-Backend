@@ -25,6 +25,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render
 from django.core.cache import cache
 from azure.storage.blob import BlobServiceClient, ContentSettings
+from vcec_bk.permission import CustomPermissionMixin
 
 connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
 
@@ -46,6 +47,9 @@ def generate_token(user_id, email):
     return token
 
 class ForgotPassword(APIView):
+    
+    # require_authentication = True
+    
     def post(self,request):
        
         email = request.data.get('email')
@@ -79,8 +83,8 @@ class ResetPassword(APIView):
     def get(self, request, token):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            expiration_time = datetime.utcfromtimestamp(payload['exp'])
-            current_time = datetime.utcnow()
+            expiration_time = datetime.fromtimestamp(payload['exp'])
+            current_time = datetime.now()
 
             if current_time <= expiration_time:
                 return render(request, 'password_change.html', {'validlink': True, 'user_id': payload['user_id']})
