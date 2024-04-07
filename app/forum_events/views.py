@@ -130,15 +130,18 @@ class get_events(APIView,CustomPageNumberPagination):
                 
                 event_data = serializer.data
                 
+                cursor = connection.cursor()
+                
                 for event in event_data:
                     likes_table = "forum_events_forum_events" + '_' + str(event['id']) + '_likes'
                     
                     if event['register_button_link'] == "vcec_form":
                         register_table = "forum_events_forum_events" + '_' + str(event['id']) + '_registration'
                         
-                        cursor = connection.cursor()
+                        
                         
                         cursor.execute(f"SELECT COUNT(*) FROM {register_table}")
+                        
                         
                         total_registrations = cursor.fetchone()[0]
                         
@@ -149,26 +152,26 @@ class get_events(APIView,CustomPageNumberPagination):
                         else:
                             event['total_registrations'] = 0
                         
-                        cursor.execute(f"SELECT user_id FROM {likes_table} WHERE is_liked=true ORDER BY id DESC LIMIT 3")
+                    cursor.execute(f"SELECT user_id FROM {likes_table} WHERE is_liked=true ORDER BY id DESC LIMIT 3")
+                    
+                    user_ids = cursor.fetchall()
+                    
+                    # print(user_ids)
+                    event['liked_by'] = []
+                    for user_id in user_ids:
                         
-                        user_ids = cursor.fetchall()
+                        user_instance = User.objects.get(id=user_id[0])
+                        event['liked_by'].append(user_instance.image_url)
+                    
+                    cursor.execute(f"SELECT COUNT(*) FROM {likes_table} WHERE is_liked=true")
+                    
+                    total_likes = cursor.fetchone()[0]
+                    
+                
+                    event['total_likes'] = total_likes
+                
                         
-                        # print(user_ids)
-                        event['liked_by'] = []
-                        for user_id in user_ids:
-                           
-                            user_instance = User.objects.get(id=user_id[0])
-                            event['liked_by'].append(user_instance.image_url)
-                        
-                        cursor.execute(f"SELECT COUNT(*) FROM {likes_table} WHERE is_liked=true")
-                        
-                        total_likes = cursor.fetchone()[0]
-                        
-                   
-                        event['total_likes'] = total_likes
-                 
-                            
-                        cursor.close()
+                cursor.close()
                         
                 for event_serialized in serializer.data:
                     if 'total_registrations' not in event_serialized:
@@ -250,58 +253,61 @@ class StudentRegisterEvent(APIView):
         return Response({"message": "Registration successful."}, status=status.HTTP_200_OK)
 class DeleteEvent(APIView):
     def delete(self,request,pk):
-        #deleting image and thumbnail image
         try:
-            ob = forumEvents.objects.get(pk=pk)
-            
-        except ob.DoesNotExist:
-            return Response({"error": "Image not found."}, status=404)
-        
-        try:
-            blob_service_client.delete_blob('media', f"{ob.poster_image.name}")
-            
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            
-        try:
-            blob_service_client.delete_blob('media', f"{ob.thumbnail_poster_image.name}")
-            
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            
-        if ob.poster_image:
-            ob.poster_image.delete()
-        if ob.thumbnail_poster_image:
-            ob.thumbnail_poster_image.delete()
-        
-        tables=["forum_events_forum_events"+ '_'+str(ob.id)+'_likes', "forum_events_forum_events"+'_'+str(ob.id)+'_registration']
-
-        
-        if ob.register_button_link=='vcec_form':
+            #deleting image and thumbnail image
+            try:
+                ob = forumEvents.objects.get(pk=pk)
+                
+            except ob.DoesNotExist:
+                return Response({"error": "Image not found."}, status=404)
             
             try:
-                cursor= connection.cursor()
-                for table_name in tables:
-                    cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
-            
-            except forumEvents.DoesNotExist:
-                return Response( "Event not found.")
+                blob_service_client.delete_blob('media', f"{ob.poster_image.name}")
+                
             except Exception as e:
-                return Response( f"An error occurred: {str(e)}")
-        else:
-   
-            cursor=connection.cursor()
-            cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
-         
-        ob.delete()
+                print(f"An error occurred: {e}")
+                
+            try:
+                blob_service_client.delete_blob('media', f"{ob.thumbnail_poster_image.name}")
+                
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                
+            if ob.poster_image:
+                ob.poster_image.delete()
+            if ob.thumbnail_poster_image:
+                ob.thumbnail_poster_image.delete()
             
-        connection.close()
-        
-        event_cache_name = "forum_events*"
+            tables=["forum_events_forum_events"+ '_'+str(ob.id)+'_likes', "forum_events_forum_events"+'_'+str(ob.id)+'_registration']
+
             
-        cache.delete_pattern(event_cache_name)
+            if ob.register_button_link=='vcec_form':
+                
+                try:
+                    cursor= connection.cursor()
+                    for table_name in tables:
+                        cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+                
+                except forumEvents.DoesNotExist:
+                    return Response( "Event not found.")
+                except Exception as e:
+                    return Response( f"An error occurred: {str(e)}")
+            else:
+    
+                cursor=connection.cursor()
+                cursor.execute(f"DROP TABLE IF EXISTS {tables[0]}")
             
-        return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
+            ob.delete()
+                
+            connection.close()
+            
+            event_cache_name = "forum_events*"
+                
+            cache.delete_pattern(event_cache_name)
+                
+            return Response({"status":"Event deleted successfully"},status=status.HTTP_200_OK)
+        except forumEvents.DoesNotExist:
+            return Response({"status": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
                 
                     
 class GetEventAnalysis(APIView):

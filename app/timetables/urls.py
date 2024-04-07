@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import *
+from .tasks import *
 
 urlpatterns=[
     path('create-timetable/excel/',create_timetables,name="post_timetable"),
@@ -14,6 +15,6 @@ urlpatterns=[
 
 
 
-
+    path('auto/update/time-table', AutoTimeTableSystem.as_view(), name='auto-update-timetable'),
 
 ]
