@@ -5,7 +5,12 @@ from celery import shared_task
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 class AutoTimeTableSystem(APIView):
+    
+    permission_classes = (IsAuthenticated,)
+    
+    
     def post(self,request):
         
         try:
@@ -30,8 +35,11 @@ class AutoTimeTableSystem(APIView):
                     starttime=serializer.data["firsttime"].split("-")[0]
                     tabletime=datetime.strptime(starttime,"%I:%M %p").time().strftime("%H:%M")
                     
+                    print('firstcode ',serializer.data["firstcode"])
                     timetable_records[i].currentcode=serializer.data["firstcode"]
                     timetable_records[i].currenttime=starttime
+                    
+                    timetable_records[i].save()
                     
                     
             else:

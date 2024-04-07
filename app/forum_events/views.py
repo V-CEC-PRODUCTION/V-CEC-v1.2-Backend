@@ -11,9 +11,6 @@ import time,random ,string
 from .models import create_tables,forumEvents,create_dynamic_models
 from django.db import connection
 from django.core.cache import cache
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
 from vcec_bk.pagination import CustomPageNumberPagination
 import json, os
 from users.models import User, Token
@@ -506,20 +503,20 @@ class GetEventById(APIView):
         except forumEvents.DoesNotExist:
             return Response({"status": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
 
-def extract_unique_meaningful_words(text):
+# def extract_unique_meaningful_words(text):
    
-    words = word_tokenize(text)
-    words = [word.lower() for word in words if word.isalnum()]
-    stop_words = set(stopwords.words('english'))
-    words = [word for word in words if word not in stop_words and not word.isdigit()]
-    lemmatizer = WordNetLemmatizer()
-    words = [lemmatizer.lemmatize(word) for word in words]
+#     words = word_tokenize(text)
+#     words = [word.lower() for word in words if word.isalnum()]
+#     stop_words = set(stopwords.words('english'))
+#     words = [word for word in words if word not in stop_words and not word.isdigit()]
+#     lemmatizer = WordNetLemmatizer()
+#     words = [lemmatizer.lemmatize(word) for word in words]
 
-    words = [word for word in words if len(word) > 2]
+#     words = [word for word in words if len(word) > 2]
 
-    unique_words = set(words)
+#     unique_words = set(words)
 
-    return unique_words
+#     return unique_words
 
 class LikeEvent(APIView):
     def post(self,request):

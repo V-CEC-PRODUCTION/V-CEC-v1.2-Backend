@@ -26,4 +26,5 @@ urlpatterns = [
     path('forgot/password/', views.ForgotPassword.as_view(), name='forgot-password'),
     path('reset/password/<token>/', views.ResetPassword.as_view(), name='reset-password'),
     path('reset/confirm/submit/', views.ResetPasswordSubmit.as_view(), name='reset-password-submit'),
+    path('update/device-id/', views.DeviceIdMethods.as_view(), name='update-device-id'),
 ]
