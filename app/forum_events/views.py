@@ -17,7 +17,7 @@ from users.models import User, Token
 from users.utils import TokenUtil
 from forum_management.models import AddForum
 from azure.storage.blob import BlobServiceClient, ContentSettings
-
+from vcec_bk.pagination import CustomEventAndAnnouncePagination
 
 connection_string = f"DefaultEndpointsProtocol=https;AccountName={os.getenv('AZURE_STORAGE_ACCOUNT_NAME')};AccountKey={os.getenv('AZURE_ACCOUNT_KEY')};EndpointSuffix=core.windows.net"
 
@@ -93,7 +93,7 @@ class GetLikesEventInd(APIView):
         
         except Exception as e:
             return Response( f"An error occurred: {str(e)}")
-class get_events(APIView,CustomPageNumberPagination):
+class get_events(APIView,CustomEventAndAnnouncePagination):
     def get(self,request):
         try:
             page_number = request.query_params.get('page')

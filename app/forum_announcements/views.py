@@ -13,7 +13,7 @@ from .models import create_dynamic_model,forumAnnouncements
 from django.db import connection
 # Create your views here.
 import json, os
-from vcec_bk.pagination import CustomPageNumberPagination
+from vcec_bk.pagination import CustomPageNumberPagination, CustomEventAndAnnouncePagination
 from django.core.cache import cache
 from users.utils import Token, TokenUtil
 from users.models import User
@@ -211,7 +211,7 @@ def thumbnail_file(request, pk):
 
     return Response(status=status.HTTP_404_NOT_FOUND)
 
-class GetAllAnnouncementsClientSide(APIView, CustomPageNumberPagination):
+class GetAllAnnouncementsClientSide(APIView, CustomEventAndAnnouncePagination):
     def get(self,request):
         try:
             page_number = request.query_params.get('page')
