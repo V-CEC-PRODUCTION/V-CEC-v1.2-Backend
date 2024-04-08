@@ -5,7 +5,9 @@ from django.core.cache import cache
 import requests
 import json
 from playwright.sync_api import sync_playwright
-
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 BASE_URL = 'https://ktu.edu.in/menu/announcements'
 COLUMNS = ['title', 'date', 'description', 'download_count', 'download_url', 'download_name']
 CSV_FILE = 'announcements.csv'
@@ -101,3 +103,16 @@ def ktu_webs_announce_task():
         return "KTU Web Scraping Task Completed"
     except Exception as e:
         return f"KTU Web Scraping Task Failed: {str(e)}"
+    
+class KTUWebScrapTask(APIView):
+    def post(self, request):
+        try:
+            ktu_result = "ktu_web_scrap"  
+            web_scrap_result = ktu_web_scrap_announcement()
+            
+            # Store the result in the cache with a week-long timeout
+            cache.set(ktu_result, json.dumps(web_scrap_result), timeout=60*60*24*7)
+            
+            return Response("KTU Web Scraping Task Completed", status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(f"KTU Web Scraping Task Failed: {str(e)}", status=status.HTTP_400_BAD_REQUEST)       
