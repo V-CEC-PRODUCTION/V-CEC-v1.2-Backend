@@ -222,7 +222,7 @@ class GetAllAnnouncementsClientSide(APIView, CustomEventAndAnnouncePagination):
                 page_number = 1
                 
             if page_count is None:
-                page_count = 1000
+                page_count = 5
             print("Forum=",forum)
 
             announcements_result_name = f"forum_announcements_{page_number}_{page_count}"

@@ -104,7 +104,7 @@ class get_events(APIView,CustomEventAndAnnouncePagination):
                 page_number = 1
                 
             if page_count is None:
-                page_count = 1000
+                page_count = 5
             print(page_count,page_number)
             status_event = request.query_params.get('status')
                
