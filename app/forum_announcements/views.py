@@ -94,7 +94,8 @@ class GetLikesAnnouncementInd(APIView):
 class GetAnnouncementAllSuperAdmin(APIView):
     def get(self,request):
         try:
-            announcement_instance = forumAnnouncements.objects.all().order_by('-publish_date')
+            forum = request.query_params.get('forum')
+            announcement_instance = forumAnnouncements.objects.filter(published_by__contains=forum).order_by('-publish_date')
             serializer = FormGetSerializer(announcement_instance, many=True)
             return Response({"announcement_result":serializer.data},status=status.HTTP_200_OK)
         except Exception as e:
